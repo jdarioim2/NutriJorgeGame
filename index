@@ -1,0 +1,2881 @@
+<!DOCTYPE html>
+<html lang="es">  
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NutriJorge: Nutriendo a Pasaje - Proyecto Beca IA</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            overflow: hidden;
+            touch-action: none;
+        }
+        .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .btn-game {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.28);
+        }
+        .btn-game:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.32);
+        }
+        .btn-game:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: floatSlow 2.8s ease-in-out infinite;
+        }
+
+        /* Mostrar controles táctiles en móviles, tablets y pantallas táctiles (incluso en horizontal) */
+        #touch-controls {
+            display: flex;
+        }
+        @media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
+            #touch-controls {
+                display: none !important;
+            }
+        }
+
+        /* Ajustes automáticos para celulares en modo horizontal (poca altura) */
+        @media (max-height: 540px) {
+            #hud-bar {
+                padding-top: 0.25rem !important;
+                padding-bottom: 0.25rem !important;
+            }
+            .hud-avatar-box {
+                width: 2rem !important;
+                height: 2rem !important;
+            }
+            .touch-pad-box {
+                width: 6.8rem !important;
+                height: 6.8rem !important;
+                padding: 0.25rem !important;
+            }
+            #btn-touch-throw {
+                width: 4.5rem !important;
+                height: 4.5rem !important;
+            }
+            #btn-touch-dash {
+                padding: 0.35rem 0.65rem !important;
+                font-size: 0.65rem !important;
+            }
+            .modal-card {
+                padding: 0.75rem 1rem !important;
+            }
+            .modal-avatar {
+                width: 4.25rem !important;
+                height: 4.25rem !important;
+            }
+        }
+    </style>
+</head>
+<body class="w-full h-[100dvh] flex flex-col items-center justify-center p-0 sm:p-1.5 md:p-3">
+
+    <!-- MAIN GAME SHELL -->
+    <div id="game-shell" class="relative w-full h-full max-w-6xl lg:max-h-[860px] bg-sky-950 sm:rounded-3xl shadow-2xl border-0 sm:border-4 border-sky-400/40 flex flex-col overflow-hidden">
+
+        <!-- TOP HUD BAR -->
+        <header id="hud-bar" class="bg-gradient-to-r from-sky-700 via-blue-700 to-emerald-700 text-white px-2 sm:px-3 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 z-20 border-b-2 sm:border-b-4 border-yellow-400 shadow-md shrink-0">
+            <!-- Brand & Campaign Tag -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <div class="hud-avatar-box w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-100 flex items-center justify-center shadow-inner border-2 border-yellow-400 overflow-hidden shrink-0">
+                    <!-- Mini 3D Pixar-Style SVG Avatar of Ñaño Jorge (Lighter Skin & Natural Smile) -->
+                    <svg viewBox="0 0 80 80" class="w-full h-full">
+                        <defs>
+                            <radialGradient id="hudSkin" cx="46%" cy="38%" r="58%">
+                                <stop offset="0%" stop-color="#fff8f2"/>
+                                <stop offset="65%" stop-color="#f8dcc6"/>
+                                <stop offset="100%" stop-color="#e5b89b"/>
+                            </radialGradient>
+                            <linearGradient id="hudHair" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#4e3524"/>
+                                <stop offset="55%" stop-color="#2b1b11"/>
+                                <stop offset="100%" stop-color="#170e08"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="40" cy="40" r="38" fill="#fde68a"/>
+                        <!-- White collared shirt -->
+                        <path d="M14 78 C14 58 66 58 66 78 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <polygon points="28,58 40,68 33,73 22,63" fill="#e2e8f0"/>
+                        <polygon points="52,58 40,68 47,73 58,63" fill="#e2e8f0"/>
+                        <!-- Ears -->
+                        <ellipse cx="17" cy="41" rx="5.5" ry="7.5" fill="#f5d3bd" stroke="#d59f7e" stroke-width="1"/>
+                        <ellipse cx="63" cy="41" rx="5.5" ry="7.5" fill="#f5d3bd" stroke="#d59f7e" stroke-width="1"/>
+                        <!-- Plump 3D Pixar-style Head -->
+                        <path d="M20 34 C19 19 28 15 40 15 C52 15 61 19 60 34 C62 49 54 61 40 61 C26 61 18 49 20 34 Z" fill="url(#hudSkin)" stroke="#d59f7e" stroke-width="1.2"/>
+                        <!-- Soft warm cheeks -->
+                        <ellipse cx="26" cy="44" rx="5.5" ry="3.5" fill="#f4978e" opacity="0.22"/>
+                        <ellipse cx="54" cy="44" rx="5.5" ry="3.5" fill="#f4978e" opacity="0.22"/>
+                        <!-- Voluminous side-parted dark brown hair -->
+                        <path d="M19 34 C17 20 23 10 39 9 C48 9 54 12 56 15 C61 16 63 24 61 34 C59 25 56 20 51 19 C43 21 29 20 23 24 C21 27 20 31 19 34 Z" fill="url(#hudHair)"/>
+                        <!-- Thick expressive dark eyebrows -->
+                        <path d="M24 28 Q31 24.5 37 27.5" stroke="#23150c" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+                        <path d="M43 27.5 Q49 24.5 56 28" stroke="#23150c" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+                        <!-- Big 3D Cartoon Eyes with Brown Irises & Catchlights -->
+                        <ellipse cx="31.5" cy="35" rx="5.6" ry="6" fill="#ffffff" stroke="#6b442a" stroke-width="1"/>
+                        <ellipse cx="48.5" cy="35" rx="5.6" ry="6" fill="#ffffff" stroke="#6b442a" stroke-width="1"/>
+                        <circle cx="32" cy="35.2" r="3.7" fill="#4a2511"/>
+                        <circle cx="48" cy="35.2" r="3.7" fill="#4a2511"/>
+                        <circle cx="32" cy="35.2" r="1.9" fill="#140a04"/>
+                        <circle cx="48" cy="35.2" r="1.9" fill="#140a04"/>
+                        <circle cx="30.4" cy="33.5" r="1.4" fill="#ffffff"/>
+                        <circle cx="46.4" cy="33.5" r="1.4" fill="#ffffff"/>
+                        <!-- Cute Rounded 3D Nose -->
+                        <ellipse cx="40" cy="41.5" rx="5.2" ry="4" fill="#f3c8ad" stroke="#cf926e" stroke-width="1"/>
+                        <ellipse cx="39" cy="40.2" rx="2.2" ry="1.3" fill="#ffffff" opacity="0.65"/>
+                        <!-- Natural, Warm, Friendly Smile -->
+                        <path d="M28.5 46.5 Q26.5 48.5 28.5 50.5" stroke="#c88a68" stroke-width="1.1" stroke-linecap="round" fill="none"/>
+                        <path d="M51.5 46.5 Q53.5 48.5 51.5 50.5" stroke="#c88a68" stroke-width="1.1" stroke-linecap="round" fill="none"/>
+                        <path d="M30 47.5 Q40 52 50 47.5" stroke="#9e5435" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        <path d="M34 51.2 Q40 53.2 46 51.2" stroke="#d49572" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1 sm:gap-1.5">
+                        <h1 class="font-display text-sm sm:text-xl font-bold tracking-wide leading-none text-white drop-shadow">
+                            NutriJorge
+                        </h1>
+                        <span class="hidden xs:inline-block sm:inline-block bg-yellow-400 text-blue-950 text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                            Ñaño Jorge
+                        </span>
+                    </div>
+                    <p class="text-[10px] sm:text-[11px] text-sky-100 hidden md:block leading-tight">
+                        Parque Central de Pasaje • 3 Cerritos • Los Naranjos • Beca IA
+                    </p>
+                </div>
+            </div>
+
+            <!-- Live Metrics -->
+            <div class="flex items-center gap-1 sm:gap-2.5 order-3 sm:order-2 w-full sm:w-auto justify-between sm:justify-center">
+                <!-- Kids Fed Counter -->
+                <div class="bg-blue-950/60 border border-sky-300/30 rounded-xl px-2 py-1 flex items-center gap-1.5 flex-1 sm:flex-initial justify-center">
+                    <span class="text-sm sm:text-lg">👧👦</span>
+                    <div>
+                        <div class="text-[8px] sm:text-[9px] uppercase tracking-wider text-sky-200 font-bold leading-none">Niños</div>
+                        <div id="hud-kids" class="font-display font-bold text-xs sm:text-base text-yellow-300 leading-tight">0</div>
+                    </div>
+                </div>
+
+                <!-- Score & Combo -->
+                <div class="bg-blue-950/60 border border-sky-300/30 rounded-xl px-2 py-1 flex items-center gap-1.5 flex-1 sm:flex-initial justify-center">
+                    <span class="text-sm sm:text-lg">⭐</span>
+                    <div>
+                        <div class="text-[8px] sm:text-[9px] uppercase tracking-wider text-sky-200 font-bold leading-none">Puntos</div>
+                        <div class="flex items-center gap-1">
+                            <span id="hud-score" class="font-display font-bold text-xs sm:text-base text-white leading-tight">0</span>
+                            <span id="hud-combo" class="hidden text-[9px] sm:text-[10px] font-extrabold bg-amber-400 text-slate-950 px-1 rounded-full">x2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Milk Inventory -->
+                <div class="bg-blue-950/60 border border-sky-300/30 rounded-xl px-2 py-1 flex items-center gap-1 flex-1 sm:flex-initial justify-center">
+                    <div>
+                        <div class="text-[8px] sm:text-[9px] uppercase tracking-wider text-sky-200 font-bold leading-none mb-0.5">Leche</div>
+                        <div id="hud-milk-icons" class="flex items-center gap-0.5 text-xs sm:text-base leading-none"></div>
+                    </div>
+                </div>
+
+                <!-- Countdown Timer -->
+                <div class="bg-blue-950/60 border border-sky-300/30 rounded-xl px-2 py-1 flex items-center gap-1 flex-1 sm:flex-initial justify-center">
+                    <span class="text-sm sm:text-lg">⏱️</span>
+                    <div>
+                        <div class="text-[8px] sm:text-[9px] uppercase tracking-wider text-sky-200 font-bold leading-none">Tiempo</div>
+                        <div id="hud-timer" class="font-display font-bold text-xs sm:text-base text-emerald-300 leading-tight">30s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-1 sm:gap-1.5 order-2 sm:order-3">
+                <button id="btn-cabezon" title="Cambiar tamaño de cabeza de Ñaño Jorge" class="btn-game bg-amber-400 hover:bg-amber-300 text-blue-950 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold border border-yellow-200 flex items-center gap-1">
+                    <span>😄</span>
+                    <span id="lbl-cabezon" class="hidden lg:inline">Cabezón</span>
+                </button>
+                <button id="btn-fullscreen" title="Pantalla Completa" class="btn-game bg-indigo-600 hover:bg-indigo-500 text-white w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center border border-indigo-300/40">
+                    <i id="icon-fullscreen" class="fas fa-expand text-xs sm:text-sm"></i>
+                </button>
+                <button id="btn-sound" title="Sonido" class="btn-game bg-sky-600 hover:bg-sky-500 text-white w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center border border-sky-300/40">
+                    <i id="icon-sound" class="fas fa-volume-up text-xs sm:text-sm"></i>
+                </button>
+                <button id="btn-pause" title="Pausar Juego" class="btn-game bg-amber-500 hover:bg-amber-400 text-slate-950 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center border border-yellow-200">
+                    <i id="icon-pause" class="fas fa-pause text-xs sm:text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CANVAS STAGE -->
+        <div id="canvas-container" class="relative flex-1 w-full bg-amber-100 overflow-hidden">
+            <canvas id="game-canvas"></canvas>
+
+            <!-- Active Powerup Banner -->
+            <div id="powerup-banner" class="hidden absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 z-10 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 text-blue-950 font-display font-bold text-[11px] sm:text-sm px-3 sm:px-4 py-1 sm:py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1.5 whitespace-nowrap">
+                <span id="powerup-icon">⚡</span>
+                <span id="powerup-text">¡Energía Activa!</span>
+            </div>
+
+            <!-- Low Milk Alert Banner -->
+            <div id="low-milk-banner" class="hidden absolute bottom-28 sm:bottom-6 left-1/2 -translate-x-1/2 z-10 bg-red-600/95 text-white font-display font-bold text-[11px] sm:text-sm px-3.5 py-1.5 rounded-full shadow-lg border-2 border-yellow-300 animate-bounce flex items-center gap-1.5 pointer-events-none whitespace-nowrap">
+                <span>🥛 ¡SIN LECHE! Ve al Camión NutriJorge</span>
+            </div>
+
+            <!-- MOBILE / TABLET TOUCH CONTROLS OVERLAY -->
+            <div id="touch-controls" class="absolute inset-x-0 bottom-2 sm:bottom-3 px-3 sm:px-5 items-end justify-between pointer-events-none z-10">
+                <!-- Virtual D-Pad / Touch Joystick Pad -->
+                <div id="touch-pad" class="touch-pad-box pointer-events-auto bg-slate-900/60 backdrop-blur-md p-1.5 rounded-2xl border border-white/25 grid grid-cols-3 gap-1 w-32 h-32 sm:w-36 sm:h-36 shadow-xl touch-none">
+                    <div></div>
+                    <button data-dir="up" class="dpad-btn bg-sky-600/90 active:bg-yellow-400 active:text-slate-950 text-white rounded-xl flex items-center justify-center text-base sm:text-lg shadow">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <div></div>
+                    <button data-dir="left" class="dpad-btn bg-sky-600/90 active:bg-yellow-400 active:text-slate-950 text-white rounded-xl flex items-center justify-center text-base sm:text-lg shadow">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="bg-slate-800/80 rounded-xl flex items-center justify-center text-[9px] font-bold text-sky-200">
+                        ÑAÑO
+                    </div>
+                    <button data-dir="right" class="dpad-btn bg-sky-600/90 active:bg-yellow-400 active:text-slate-950 text-white rounded-xl flex items-center justify-center text-base sm:text-lg shadow">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <div></div>
+                    <button data-dir="down" class="dpad-btn bg-sky-600/90 active:bg-yellow-400 active:text-slate-950 text-white rounded-xl flex items-center justify-center text-base sm:text-lg shadow">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div></div>
+                </div>
+
+                <!-- Throw Milk & Dash Buttons -->
+                <div class="pointer-events-auto flex flex-col items-end gap-2">
+                    <button id="btn-touch-dash" class="btn-game bg-amber-400 active:bg-amber-300 text-slate-950 font-display font-bold px-3.5 py-2 rounded-2xl border-2 border-white shadow-lg flex items-center gap-1.5 text-xs">
+                        <i class="fas fa-bolt"></i>
+                        <span>IMPULSO</span>
+                    </button>
+                    <button id="btn-touch-throw" class="btn-game bg-emerald-500 active:bg-emerald-400 text-white font-display font-bold w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-yellow-300 shadow-2xl flex flex-col items-center justify-center">
+                        <span class="text-xl sm:text-2xl leading-none">🥛</span>
+                        <span class="text-[10px] sm:text-[11px] tracking-tight mt-0.5">ENTREGAR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- START / WELCOME MODAL -->
+            <div id="start-modal" class="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+                <div class="modal-card bg-gradient-to-b from-white to-sky-50 max-w-xl w-full max-h-full overflow-y-auto rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-4 border-yellow-400 shadow-2xl text-center relative my-auto">
+                    <!-- Top Scholarship Badge -->
+                    <div class="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full shadow mb-1.5 sm:mb-2">
+                        <i class="fas fa-robot text-yellow-300"></i>
+                        <span>Proyecto Beca de Inteligencia Artificial • Pasaje, El Oro</span>
+                    </div>
+
+                    <!-- Hero Avatar ("Ñaño Jorge" 3D Pixar Portrait - Lighter Skin & Natural Smile) -->
+                    <div class="flex justify-center mb-1.5 sm:mb-2">
+                        <div class="modal-avatar w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-amber-200 via-orange-100 to-sky-100 border-4 border-amber-400 shadow-xl flex items-center justify-center overflow-hidden animate-float">
+                            <svg viewBox="0 0 140 140" class="w-full h-full">
+                                <!-- Cute Rounded 3D Bulb Nose -->
+                                <ellipse cx="70" cy="66" rx="10" ry="7.6" fill="#f3c8ad" stroke="#cf926e" stroke-width="1.4"/>
+                                <ellipse cx="68" cy="63.8" rx="4.2" ry="2.4" fill="#ffffff" opacity="0.65"/>
+                                <!-- Natural Warm Dimples -->
+                                <path d="M47 74 Q44 77.5 47.5 81" stroke="#c98b69" stroke-width="1.7" stroke-linecap="round" fill="none"/>
+                                <path d="M93 74 Q96 77.5 92.5 81" stroke="#c98b69" stroke-width="1.7" stroke-linecap="round" fill="none"/>
+                                <!-- Natural, Warm, Friendly Smile (soft curved lips) -->
+                                <path d="M50 76.5 Q70 84.5 90 76.5 Q70 80.5 50 76.5 Z" fill="#ffffff" stroke="#b06949" stroke-width="1.5" stroke-linejoin="round"/>
+                                <path d="M49 76 Q70 82.5 91 76" stroke="#9e5435" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+                                <!-- Soft Lower Lip & Chin Highlight -->
+                                <path d="M58 84 Q70 87.5 82 84" stroke="#d49572" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <h2 class="font-display font-bold text-2xl sm:text-4xl text-blue-950 tracking-tight">
+                        NutriJorge: Ñaño Jorge Loayza
+                    </h2>
+                    <p class="text-[11px] sm:text-sm text-slate-600 mt-1 max-w-md mx-auto leading-relaxed">
+                        ¡Juega con él <strong class="text-blue-700">"Ñaño Jorge" (Jorge Loayza)</strong> en el <strong class="text-emerald-700">Parque Central de Pasaje</strong>! Comienzas con <strong class="text-rose-600">30 segundos</strong>, a los <strong class="text-emerald-700">15 segundos</strong> sale el primer reloj y el camión se mueve rápido entre las esquinas y el centro.
+                    </p>
+
+                    <!-- Instructions Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 my-2.5 sm:my-3.5 text-left">
+                        <div class="bg-sky-100/80 border border-sky-200 p-2 sm:p-2.5 rounded-2xl flex items-center gap-2">
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 font-bold text-sm sm:text-base">
+                                🎮
+                            </div>
+                            <div class="text-[11px] sm:text-xs">
+                                <div class="font-bold text-slate-800">Muévete Rápido</div>
+                                <div class="text-slate-600">Usa <b>WASD / Flechas</b> o el mando táctil.</div>
+                            </div>
+                        </div>
+                        <div class="bg-emerald-100/80 border border-emerald-200 p-2 sm:p-2.5 rounded-2xl flex items-center gap-2">
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 font-bold text-sm sm:text-base">
+                                🎯
+                            </div>
+                            <div class="text-[11px] sm:text-xs">
+                                <div class="font-bold text-slate-800">Auto-Entrega</div>
+                                <div class="text-slate-600"><b>Espacio / Clic</b> o acércate al niño para darle leche.</div>
+                            </div>
+                        </div>
+                        <div class="bg-amber-100/80 border border-amber-200 p-2 sm:p-2.5 rounded-2xl flex items-center gap-2">
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 font-bold text-sm sm:text-base">
+                                ⏰
+                            </div>
+                            <div class="text-[11px] sm:text-xs">
+                                <div class="font-bold text-slate-800">30s + Reloj a los 15s</div>
+                                <div class="text-slate-600">El camión corre rápido y el primer <b>Reloj ⏰</b> sale a los 15s.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Difficulty / Speed Selector -->
+                    <div class="mb-3 sm:mb-4">
+                        <div class="flex items-center justify-between max-w-sm mx-auto mb-1.5 px-1">
+                            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500">Dificultad de la Jornada</span>
+                            <span class="text-[10px] sm:text-[11px] font-bold text-amber-600">🏆 Récord: <span id="menu-highscore">0</span> pts</span>
+                        </div>
+                        <div class="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+                            <button data-diff="easy" class="diff-btn px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-slate-300 bg-white text-slate-700">
+                                🌱 Fácil (30s)
+                            </button>
+                            <button data-diff="normal" class="diff-btn px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-blue-600 bg-blue-600 text-white shadow">
+                                ⭐ Normal (30s)
+                            </button>
+                            <button data-diff="fast" class="diff-btn px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-slate-300 bg-white text-slate-700">
+                                🔥 Rápido (30s)
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="btn-start-game" class="btn-game w-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-display font-bold text-base sm:text-xl py-2.5 sm:py-3.5 rounded-2xl border-2 border-yellow-300 shadow-xl flex items-center justify-center gap-2">
+                        <i class="fas fa-play"></i>
+                        <span>¡COMENZAR A REPARTIR LECHE!</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PAUSE MODAL -->
+            <div id="pause-modal" class="hidden absolute inset-0 z-30 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white max-w-sm w-full rounded-3xl p-6 border-4 border-yellow-400 shadow-2xl text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3 text-3xl">
+                        ⏸️
+                    </div>
+                    <h3 class="font-display font-bold text-2xl text-slate-900">Juego en Pausa</h3>
+                    <p class="text-xs text-slate-600 mt-1 mb-5">Los niños del Parque Central de Pasaje esperan su leche NutriJorge.</p>
+                    <div class="flex flex-col gap-2.5">
+                        <button id="btn-resume-game" class="btn-game bg-emerald-500 hover:bg-emerald-400 text-white font-display font-bold py-3 rounded-2xl">
+                            ▶ Continuar Jugando
+                        </button>
+                        <button id="btn-restart-pause" class="btn-game bg-sky-600 hover:bg-sky-500 text-white font-display font-bold py-3 rounded-2xl">
+                            🔄 Reiniciar Partida
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME OVER / VICTORY REPORT MODAL -->
+            <div id="gameover-modal" class="hidden absolute inset-0 z-30 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+                <div class="bg-gradient-to-b from-white to-sky-50 max-w-md w-full rounded-3xl p-6 border-4 border-yellow-400 shadow-2xl text-center">
+                    <div id="end-medal" class="text-5xl mb-2">🏆</div>
+                    <div class="inline-block bg-emerald-100 text-emerald-800 text-xs font-extrabold px-3 py-0.5 rounded-full mb-1">
+                        ¡JORNADA CUMPLIDA EN PASAJE!
+                    </div>
+                    <h3 id="end-title" class="font-display font-bold text-3xl text-blue-950">
+                        ¡Gran Trabajo con NutriJorge!
+                    </h3>
+                    <p id="end-subtitle" class="text-xs text-slate-600 mt-1">
+                        Jorge Loayza y tú llevaron nutrición y alegría a las familias pasajeñas.
+                    </p>
+
+                    <!-- Summary Stats -->
+                    <div class="grid grid-cols-3 gap-2 my-4">
+                        <div class="bg-sky-100 border border-sky-200 p-3 rounded-2xl">
+                            <div class="text-[10px] font-bold uppercase text-sky-700">Niños Nutridos</div>
+                            <div id="end-kids" class="font-display font-bold text-2xl text-blue-950 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-amber-100 border border-amber-200 p-3 rounded-2xl">
+                            <div class="text-[10px] font-bold uppercase text-amber-800">Puntaje Final</div>
+                            <div id="end-score" class="font-display font-bold text-2xl text-amber-900 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-emerald-100 border border-emerald-200 p-3 rounded-2xl">
+                            <div class="text-[10px] font-bold uppercase text-emerald-800">Racha Máx.</div>
+                            <div id="end-combo" class="font-display font-bold text-2xl text-emerald-900 mt-0.5">x1</div>
+                        </div>
+                    </div>
+
+                    <!-- AI Scholarship Message Box -->
+                    <div class="bg-blue-950 text-sky-100 p-3.5 rounded-2xl text-xs mb-5 border border-sky-400/30 text-left flex items-center gap-3">
+                        <div class="text-2xl shrink-0">🤖🥛</div>
+                        <div>
+                            <div class="font-bold text-yellow-300">Proyecto Beca de Inteligencia Artificial</div>
+                            <div class="text-[11px] text-sky-100/90 leading-snug">
+                                Con nutrición infantil a través de <b>NutriJorge</b> y educación tecnológica para la juventud, Pasaje avanza hacia el futuro.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btn-play-again" class="btn-game w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-display font-bold text-lg py-3.5 rounded-2xl border-2 border-yellow-300 shadow-xl">
+                        🔄 ¡Jugar Otra Jornada!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM DESKTOP CONTROLS BAR -->
+        <footer class="hidden sm:flex bg-slate-900 text-slate-300 px-4 py-2 text-xs items-center justify-between border-t border-slate-800 z-20">
+            <div class="flex items-center gap-4">
+                <span><kbd class="bg-slate-800 text-sky-300 px-1.5 py-0.5 rounded border border-slate-700 font-mono">WASD</kbd> o <kbd class="bg-slate-800 text-sky-300 px-1.5 py-0.5 rounded border border-slate-700 font-mono">Flechas</kbd> Mover al Ñaño Jorge</span>
+                <span><kbd class="bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded border border-slate-700 font-mono">ESPACIO</kbd> o <kbd class="bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded border border-slate-700 font-mono">Clic</kbd> Entregar Leche (Auto-Apuntado)</span>
+                <span><kbd class="bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded border border-slate-700 font-mono">SHIFT</kbd> Impulso Rápido</span>
+            </div>
+            <div class="text-sky-300 font-semibold">
+                🌴 Parque Central de Pasaje • 3 Cerritos • Los Naranjos • La Peaña
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        /********************************************************************
+         * 1. WEB AUDIO SYNTHESIZER (No external audio files required)
+         ********************************************************************/
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggleMute() {
+                this.muted = !this.muted;
+                return this.muted;
+            }
+
+            playTone(freq, type = 'sine', duration = 0.12, vol = 0.12, slideTo = null) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, now);
+                    if (slideTo) {
+                        osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+                    }
+                    gain.gain.setValueAtTime(vol, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + duration);
+                } catch (e) {}
+            }
+
+            playThrow() {
+                this.playTone(340, 'triangle', 0.11, 0.12, 660);
+            }
+
+            playDeliver(combo = 1) {
+                const base = 523.25 * Math.pow(1.06, Math.min(combo, 10));
+                this.playTone(base, 'sine', 0.12, 0.15, base * 1.25);
+                setTimeout(() => this.playTone(base * 1.5, 'triangle', 0.18, 0.14), 55);
+            }
+
+            playRefill() {
+                this.playTone(440, 'sine', 0.08, 0.1, 587.33);
+            }
+
+            playEmpty() {
+                this.playTone(170, 'sawtooth', 0.16, 0.12, 120);
+            }
+
+            playPowerup() {
+                [523.25, 659.25, 783.99, 1046.5].forEach((n, i) => {
+                    setTimeout(() => this.playTone(n, 'triangle', 0.12, 0.14), i * 55);
+                });
+            }
+
+            playDash() {
+                this.playTone(240, 'sine', 0.14, 0.12, 520);
+            }
+
+            playVictory() {
+                [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5].forEach((n, i) => {
+                    setTimeout(() => this.playTone(n, 'triangle', 0.18, 0.16), i * 110);
+                });
+            }
+        }
+
+        const sfx = new SoundEffects();
+
+        /********************************************************************
+         * 2. GAME CONFIGURATION & STATE (PARQUE CENTRAL DE PASAJE)
+         ********************************************************************/
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+
+        const WORLD_W = 1100;
+        const WORLD_H = 650;
+
+        // Starts at 30 seconds, fast truck movement, and first clock at 15 seconds
+        const DIFFICULTY_SETTINGS = {
+            easy: {
+                duration: 30,
+                spawnInterval: 2.1,
+                maxKids: 8,
+                kidPatience: 13.5,
+                playerSpeed: 345,
+                maxMilk: 6,
+                truckMoveInterval: 5.8,
+                clockSpawnInterval: 8.5,
+                clockBonus: 9
+            },
+            normal: {
+                duration: 30,
+                spawnInterval: 1.65,
+                maxKids: 10,
+                kidPatience: 11.2,
+                playerSpeed: 360,
+                maxMilk: 5,
+                truckMoveInterval: 4.3,
+                clockSpawnInterval: 7.5,
+                clockBonus: 8
+            },
+            fast: {
+                duration: 30,
+                spawnInterval: 1.28,
+                maxKids: 12,
+                kidPatience: 9.2,
+                playerSpeed: 380,
+                maxMilk: 5,
+                truckMoveInterval: 3.2,
+                clockSpawnInterval: 6.5,
+                clockBonus: 7
+            }
+        };
+
+        const CABEZON_SCALES = [1.35, 1.82, 2.30];
+        const CABEZON_LABELS = ['Normal', 'Cabezón', 'Súper Cabezón'];
+
+        let currentDifficulty = 'normal';
+        let highScore = Number(localStorage.getItem('nutrijorge_highscore') || 0);
+        document.getElementById('menu-highscore').textContent = highScore;
+
+        const gameState = {
+            status: 'menu', // 'menu', 'playing', 'paused', 'gameover'
+            score: 0,
+            kidsFed: 0,
+            combo: 0,
+            maxCombo: 1,
+            timeLeft: 30,
+            spawnTimer: 0,
+            powerupSpawnTimer: 6,
+            clockSpawnTimer: 15, // First time item spawns after 15 seconds
+            refillTickTimer: 0,
+            worldTime: 0,
+            cabezonMode: 1
+        };
+
+        // Player: "Ñaño Jorge" (Jorge Loayza)
+        const player = {
+            x: WORLD_W / 2,
+            y: 440,
+            vx: 0,
+            vy: 0,
+            radius: 26,
+            facingX: 0,
+            facingY: 1,
+            milk: 5,
+            maxMilk: 5,
+            walkCycle: 0,
+            dashTimer: 0,
+            dashCooldown: 0,
+            speedBoostTimer: 0,
+            multiMilkTimer: 0,
+            smileBoostTimer: 0,
+            headTilt: 0,
+            headTiltVel: 0,
+            headOffsetX: 0,
+            headVelX: 0,
+            lockedKid: null
+        };
+
+        // Waypoints for the mobile Camión NutriJorge (Center + 4 Corners of Parque Central)
+        const TRUCK_WAYPOINTS = [
+            { x: 550, y: 360, label: 'Centro del Parque' },
+            { x: 205, y: 255, label: 'Esquina 3 Cerritos (NO)' },
+            { x: 895, y: 255, label: 'Esquina Los Naranjos (NE)' },
+            { x: 205, y: 540, label: 'Esquina La Peaña (SO)' },
+            { x: 895, y: 540, label: 'Esquina Loma de Franco (SE)' }
+        ];
+
+        // Mobile Refill Station ("Camión NutriJorge" - Moves fast & has a smaller refill circle)
+        const truckStation = {
+            x: 550,
+            y: 360,
+            targetX: 550,
+            targetY: 360,
+            waypointIndex: 0,
+            locationName: 'Centro del Parque',
+            moveTimer: 4.3,
+            moveInterval: 4.3,
+            speed: 850,
+            isMoving: false,
+            w: 124,
+            h: 64,
+            refillRadius: 56
+        };
+
+        // Famous Neighborhoods & Sectors of Pasaje surrounding Parque Central
+        const pasajeSectors = [
+            { name: '3 Cerritos', sub: 'SECTOR TRADICIONAL', x: 135, y: 215, color: '#16a34a', roof: '#15803d', icon: '⛰️' },
+            { name: 'Los Naranjos', sub: 'CIUDADELA', x: 965, y: 215, color: '#ea580c', roof: '#c2410c', icon: '🍊' },
+            { name: 'La Peaña', sub: 'PARROQUIA RURAL', x: 135, y: 555, color: '#0284c7', roof: '#0369a1', icon: '🌿' },
+            { name: 'Loma de Franco', sub: 'PARROQUIA URBANA', x: 965, y: 555, color: '#7c3aed', roof: '#6d28d9', icon: '🏡' },
+            { name: 'Malecón', sub: 'AV. JUBONES', x: 120, y: 385, color: '#0d9488', roof: '#0f766e', icon: '🌊' },
+            { name: 'Casacay', sub: 'PARROQUIA RURAL', x: 980, y: 385, color: '#d97706', roof: '#b45309', icon: '☀️' }
+        ];
+
+        // Child spawn locations mapped to Pasaje's neighborhoods
+        const kidSpawnSpots = [
+            { x: 205, y: 245, barrio: '3 Cerritos' },
+            { x: 355, y: 235, barrio: '3 Cerritos' },
+            { x: 885, y: 245, barrio: 'Los Naranjos' },
+            { x: 735, y: 245, barrio: 'Los Naranjos' },
+            { x: 215, y: 490, barrio: 'La Peaña' },
+            { x: 380, y: 565, barrio: 'La Peaña' },
+            { x: 885, y: 495, barrio: 'Loma de Franco' },
+            { x: 725, y: 565, barrio: 'Loma de Franco' },
+            { x: 205, y: 380, barrio: 'Malecón Jubones' },
+            { x: 890, y: 380, barrio: 'Casacay' },
+            { x: 465, y: 385, barrio: '3 Cerritos' },
+            { x: 645, y: 385, barrio: 'Los Naranjos' }
+        ];
+
+        // Palm trees & white double-globe lampposts inside Parque Central de Pasaje
+        const parkPalms = [
+            { x: 245, y: 260, scale: 0.95 },
+            { x: 430, y: 225, scale: 0.9 },
+            { x: 675, y: 225, scale: 0.95 },
+            { x: 225, y: 495, scale: 1.0 },
+            { x: 875, y: 500, scale: 1.0 },
+            { x: 455, y: 465, scale: 0.85 },
+            { x: 655, y: 465, scale: 0.85 }
+        ];
+
+        const parkLampposts = [
+            { x: 215, y: 325 },
+            { x: 425, y: 335 },
+            { x: 445, y: 530 },
+            { x: 660, y: 530 },
+            { x: 735, y: 325 },
+            { x: 895, y: 325 }
+        ];
+
+        let kids = [];
+        let projectiles = [];
+        let powerups = [];
+        let clouds = [
+            { x: 150, y: 38, speed: 12, scale: 1.0 },
+            { x: 520, y: 26, speed: 9, scale: 0.85 },
+            { x: 880, y: 46, speed: 15, scale: 1.15 }
+        ];
+
+        /********************************************************************
+         * 2B. ZERO-LAG PRE-RENDERED SPRITE CACHES & OBJECT POOLS
+         ********************************************************************/
+        const MAX_PARTICLES = 48;
+        const particlePool = Array.from({ length: MAX_PARTICLES }, () => ({
+            active: false, x: 0, y: 0, vx: 0, vy: 0, spriteType: 0, life: 0, maxLife: 0.55, scale: 1
+        }));
+
+        const MAX_FLOATING_TEXTS = 12;
+        const floatingTextPool = Array.from({ length: MAX_FLOATING_TEXTS }, () => ({
+            active: false, x: 0, y: 0, text: '', color: '#15803d', life: 0, maxLife: 1
+        }));
+
+        let staticParkCanvas = null;
+        let heartSpriteCanvas = null;
+        let starSpriteCanvas = null;
+        let milkSpriteCanvas = null;
+        let jorgeHeadNormalCanvas = null;
+        let jorgeHeadHappyCanvas = null;
+        let truckBodySpriteCanvas = null;
+        const powerupSprites = {};
+        let lastDisplayedSec = -1;
+        let lastDisplayedMilk = -1;
+        let lastDisplayedMulti = false;
+
+        function createHeartSprite() {
+            const c = document.createElement('canvas');
+            c.width = 36;
+            c.height = 36;
+            const g = c.getContext('2d');
+            g.translate(18, 18);
+            const grad = g.createRadialGradient(-3, -4, 2, 0, 0, 15);
+            grad.addColorStop(0, '#ff758f');
+            grad.addColorStop(0.55, '#ef4444');
+            grad.addColorStop(1, '#b91c1c');
+            g.fillStyle = grad;
+            g.strokeStyle = '#ffffff';
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(0, 11);
+            g.bezierCurveTo(-15, 2, -16, -11, -7.5, -11);
+            g.bezierCurveTo(-2.5, -11, 0, -6.5, 0, -4.5);
+            g.bezierCurveTo(0, -6.5, 2.5, -11, 7.5, -11);
+            g.bezierCurveTo(16, -11, 15, 2, 0, 11);
+            g.closePath();
+            g.fill();
+            g.stroke();
+            g.fillStyle = 'rgba(255,255,255,0.65)';
+            g.beginPath();
+            g.ellipse(-6, -6, 3, 1.8, -0.5, 0, Math.PI * 2);
+            g.fill();
+            return c;
+        }
+
+        function createStarSprite() {
+            const c = document.createElement('canvas');
+            c.width = 34;
+            c.height = 34;
+            const g = c.getContext('2d');
+            g.translate(17, 17);
+            g.fillStyle = '#facc15';
+            g.strokeStyle = '#ca8a04';
+            g.lineWidth = 2;
+            g.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const a1 = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+                const a2 = a1 + Math.PI / 5;
+                g.lineTo(Math.cos(a1) * 12, Math.sin(a1) * 12);
+                g.lineTo(Math.cos(a2) * 5.5, Math.sin(a2) * 5.5);
+            }
+            g.closePath();
+            g.fill();
+            g.stroke();
+            return c;
+        }
+
+        function createMilkSprite() {
+            const c = document.createElement('canvas');
+            c.width = 32;
+            c.height = 36;
+            const g = c.getContext('2d');
+            g.translate(16, 19);
+            g.fillStyle = '#ffffff';
+            g.strokeStyle = '#0284c7';
+            g.lineWidth = 2;
+            roundRect(g, -9, -11, 18, 22, 4, true, true);
+            g.fillStyle = '#38bdf8';
+            g.fillRect(-8, -3, 16, 8);
+            g.fillStyle = '#0284c7';
+            g.beginPath();
+            g.moveTo(-9, -11);
+            g.lineTo(0, -17);
+            g.lineTo(9, -11);
+            g.closePath();
+            g.fill();
+            return c;
+        }
+
+        function createPowerupIconSprite(type, color) {
+            const c = document.createElement('canvas');
+            c.width = 64;
+            c.height = 64;
+            const g = c.getContext('2d');
+            g.translate(32, 32);
+
+            g.fillStyle = color + '33';
+            g.beginPath();
+            g.arc(0, 0, 27, 0, Math.PI * 2);
+            g.fill();
+
+            g.fillStyle = '#ffffff';
+            g.strokeStyle = color;
+            g.lineWidth = 3.5;
+            g.beginPath();
+            g.arc(0, 0, 21, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+
+            if (type === 'time') {
+                g.strokeStyle = '#059669';
+                g.lineWidth = 2.8;
+                g.beginPath();
+                g.arc(0, 1, 11, 0, Math.PI * 2);
+                g.stroke();
+                g.beginPath();
+                g.moveTo(0, 1);
+                g.lineTo(0, -5.5);
+                g.moveTo(0, 1);
+                g.lineTo(5, 1);
+                g.stroke();
+                g.lineWidth = 2.4;
+                g.beginPath();
+                g.arc(-7, -9, 3.5, Math.PI * 0.8, Math.PI * 1.9);
+                g.arc(7, -9, 3.5, Math.PI * 1.1, Math.PI * 2.2);
+                g.stroke();
+            } else if (type === 'speed') {
+                g.fillStyle = '#f59e0b';
+                g.strokeStyle = '#b45309';
+                g.lineWidth = 1.5;
+                g.beginPath();
+                g.moveTo(3, -13);
+                g.lineTo(-9, 2);
+                g.lineTo(-1, 2);
+                g.lineTo(-4, 13);
+                g.lineTo(9, -2);
+                g.lineTo(1, -2);
+                g.closePath();
+                g.fill();
+                g.stroke();
+            } else if (starSpriteCanvas) {
+                g.drawImage(starSpriteCanvas, -14, -14, 28, 28);
+            }
+            return c;
+        }
+
+        function createTruckBodySprite() {
+            const c = document.createElement('canvas');
+            c.width = 150;
+            c.height = 90;
+            const g = c.getContext('2d');
+            g.translate(72, 46);
+
+            g.fillStyle = 'rgba(0,0,0,0.18)';
+            roundRect(g, -64, -22, 132, 62, 14, true, false);
+
+            g.fillStyle = '#ffffff';
+            g.strokeStyle = '#0284c7';
+            g.lineWidth = 3;
+            roundRect(g, -62, -30, 94, 58, 10, true, true);
+
+            g.fillStyle = '#16a34a';
+            g.fillRect(-60, 6, 90, 13);
+
+            g.fillStyle = '#0284c7';
+            roundRect(g, 30, -22, 34, 48, 8, true, true);
+            g.fillStyle = '#bae6fd';
+            roundRect(g, 41, -16, 17, 36, 4, true, false);
+
+            g.fillStyle = '#1e293b';
+            g.fillRect(-48, -34, 20, 5);
+            g.fillRect(10, -34, 20, 5);
+            g.fillRect(-48, 27, 20, 5);
+            g.fillRect(10, 27, 20, 5);
+
+            if (milkSpriteCanvas) {
+                g.drawImage(milkSpriteCanvas, -55, -24, 14, 17);
+            }
+            g.fillStyle = '#0f172a';
+            g.font = '900 10.5px "Fredoka", sans-serif';
+            g.textAlign = 'center';
+            g.fillText('ÑAÑO JORGE', -8, -10);
+
+            return c;
+        }
+
+        // Pre-render Ñaño Jorge's 3D Pixar-Style Head (Lighter Skin & Natural Friendly Smile!)
+        function createJorge3DHeadSprite(superHappy = false) {
+            const c = document.createElement('canvas');
+            c.width = 128;
+            c.height = 128;
+            const g = c.getContext('2d');
+            g.translate(64, 68);
+
+            // Ears with lighter warm skin shading
+            g.fillStyle = '#f5d3bd';
+            g.strokeStyle = '#d59f7e';
+            g.lineWidth = 2;
+            g.beginPath();
+            g.ellipse(-34, -2, 8.5, 12, -0.1, 0, Math.PI * 2);
+            g.ellipse(34, -2, 8.5, 12, 0.1, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+            g.fillStyle = '#e2b598';
+            g.beginPath();
+            g.ellipse(-34, -2, 4, 6.5, 0, 0, Math.PI * 2);
+            g.ellipse(34, -2, 4, 6.5, 0, 0, Math.PI * 2);
+            g.fill();
+
+            // 3D Pixar-Style Plump Face with Lighter Warm Skin Shading
+            const skinGrad = g.createRadialGradient(-6, -12, 5, 0, 0, 42);
+            skinGrad.addColorStop(0, '#fff9f4');
+            skinGrad.addColorStop(0.62, '#f8dcc6');
+            skinGrad.addColorStop(1, '#e5b89b');
+            g.fillStyle = skinGrad;
+            g.strokeStyle = '#d59f7e';
+            g.lineWidth = 2.1;
+            g.beginPath();
+            g.moveTo(-30, -14);
+            g.bezierCurveTo(-32, -37, -17, -43, 0, -43);
+            g.bezierCurveTo(17, -43, 32, -37, 30, -14);
+            g.bezierCurveTo(35, 12, 24, 34, 0, 34);
+            g.bezierCurveTo(-24, 34, -35, 12, -30, -14);
+            g.closePath();
+            g.fill();
+            g.stroke();
+
+            // Subtle Forehead Expression Crease
+            g.strokeStyle = 'rgba(205, 145, 110, 0.35)';
+            g.lineWidth = 1.4;
+            g.lineCap = 'round';
+            g.beginPath();
+            g.moveTo(-13, -29);
+            g.quadraticCurveTo(0, -31.2, 13, -29);
+            g.stroke();
+
+            // Soft Warm Rosy Cheeks
+            g.fillStyle = superHappy ? 'rgba(244, 132, 118, 0.28)' : 'rgba(244, 151, 142, 0.20)';
+            g.beginPath();
+            g.ellipse(-20, 5, 9.5, 6, 0, 0, Math.PI * 2);
+            g.ellipse(20, 5, 9.5, 6, 0, 0, Math.PI * 2);
+            g.fill();
+
+            // Voluminous Side-Parted Dark Brown Hair
+            const hairGrad = g.createLinearGradient(-32, -54, 32, -15);
+            hairGrad.addColorStop(0, '#543824');
+            hairGrad.addColorStop(0.5, '#2b1b10');
+            hairGrad.addColorStop(1, '#150c06');
+            g.fillStyle = hairGrad;
+            g.beginPath();
+            g.moveTo(-31, -10);
+            g.bezierCurveTo(-34, -32, -24, -50, 0, -51);
+            g.bezierCurveTo(14, -52, 23, -47, 26, -42);
+            g.bezierCurveTo(34, -40, 36, -26, 31, -10);
+            g.bezierCurveTo(29, -23, 25, -33, 19, -35);
+            g.bezierCurveTo(6, -32, -14, -34, -24, -27);
+            g.bezierCurveTo(-28, -23, -29, -16, -31, -10);
+            g.closePath();
+            g.fill();
+
+            // Hair Highlight
+            g.strokeStyle = 'rgba(122, 84, 56, 0.65)';
+            g.lineWidth = 2.5;
+            g.beginPath();
+            g.moveTo(-18, -40);
+            g.quadraticCurveTo(2, -47, 20, -40);
+            g.stroke();
+
+            // Thick Expressive Dark-Brown Eyebrows
+            g.strokeStyle = '#22130a';
+            g.lineWidth = 5.4;
+            g.lineCap = 'round';
+            const browLift = superHappy ? -1.4 : 0;
+            g.beginPath();
+            g.moveTo(-24, -18 + browLift);
+            g.quadraticCurveTo(-14, -24 + browLift, -5, -19.5 + browLift);
+            g.moveTo(5, -19.5 + browLift);
+            g.quadraticCurveTo(14, -24 + browLift, 24, -18 + browLift);
+            g.stroke();
+
+            // Big Expressive 3D Cartoon Eyes with Chestnut-Brown Irises & Dual Catchlights
+            [-13.5, 13.5].forEach((ex, idx) => {
+                g.fillStyle = '#ffffff';
+                g.strokeStyle = '#6b442a';
+                g.lineWidth = 1.5;
+                g.beginPath();
+                g.ellipse(ex, -9.5, 8.4, superHappy ? 8.2 : 8.8, 0, 0, Math.PI * 2);
+                g.fill();
+                g.stroke();
+
+                const irisX = ex + (idx === 0 ? 0.5 : -0.5);
+                g.fillStyle = '#542a14';
+                g.beginPath();
+                g.arc(irisX, -9.2, 5.4, 0, Math.PI * 2);
+                g.fill();
+
+                g.fillStyle = '#120803';
+                g.beginPath();
+                g.arc(irisX, -9.2, 2.9, 0, Math.PI * 2);
+                g.fill();
+
+                g.fillStyle = '#ffffff';
+                g.beginPath();
+                g.arc(irisX - 2.0, -11.5, 2.0, 0, Math.PI * 2);
+                g.arc(irisX + 1.9, -7.2, 0.9, 0, Math.PI * 2);
+                g.fill();
+            });
+
+            // Cute Rounded 3D Nose (lighter warm tone)
+            const noseGrad = g.createRadialGradient(-2, -1, 1, 0, 1, 9);
+            noseGrad.addColorStop(0, '#fff5ec');
+            noseGrad.addColorStop(0.65, '#f3c8ad');
+            noseGrad.addColorStop(1, '#d89b79');
+            g.fillStyle = noseGrad;
+            g.strokeStyle = '#c88864';
+            g.lineWidth = 1.4;
+            g.beginPath();
+            g.ellipse(0, 1.2, 8.8, 6.8, 0, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+
+            // Subtle, Natural Smile Dimples
+            g.strokeStyle = '#c88a68';
+            g.lineWidth = 1.6;
+            g.beginPath();
+            g.moveTo(-17.5, 7.8);
+            g.quadraticCurveTo(-20.5, 11, -17, 14.5);
+            g.moveTo(17.5, 7.8);
+            g.quadraticCurveTo(20.5, 11, 17, 14.5);
+            g.stroke();
+
+            // Natural, Warm, Friendly Smile (gentle closed/parted curve matching reference photo)
+            const lowerSmileCurve = superHappy ? 16.5 : 14.6;
+            g.fillStyle = '#ffffff';
+            g.strokeStyle = '#b06949';
+            g.lineWidth = 1.6;
+            g.lineJoin = 'round';
+            g.beginPath();
+            g.moveTo(-14.5, 9.5);
+            g.quadraticCurveTo(0, lowerSmileCurve, 14.5, 9.5);
+            g.quadraticCurveTo(0, 11.8, -14.5, 9.5);
+            g.closePath();
+            g.fill();
+            g.stroke();
+
+            // Smooth Upper Lip Smile Line
+            g.strokeStyle = '#9e5435';
+            g.lineWidth = 2.2;
+            g.lineCap = 'round';
+            g.beginPath();
+            g.moveTo(-15.5, 9.2);
+            g.quadraticCurveTo(0, 13.0, 15.5, 9.2);
+            g.stroke();
+
+            // Soft Chin Contour
+            g.strokeStyle = 'rgba(201, 139, 105, 0.55)';
+            g.lineWidth = 1.5;
+            g.beginPath();
+            g.moveTo(-8, 19.5);
+            g.quadraticCurveTo(0, 22, 8, 19.5);
+            g.stroke();
+
+            return c;
+        }
+
+        function initOffscreenCaches() {
+            heartSpriteCanvas = createHeartSprite();
+            starSpriteCanvas = createStarSprite();
+            milkSpriteCanvas = createMilkSprite();
+            jorgeHeadNormalCanvas = createJorge3DHeadSprite(false);
+            jorgeHeadHappyCanvas = createJorge3DHeadSprite(true);
+            truckBodySpriteCanvas = createTruckBodySprite();
+            powerupSprites.time = createPowerupIconSprite('time', '#10b981');
+            powerupSprites.speed = createPowerupIconSprite('speed', '#f59e0b');
+            powerupSprites.multi = createPowerupIconSprite('multi', '#3b82f6');
+
+            // Cache static Parque Central de Pasaje background onto a single offscreen canvas
+            staticParkCanvas = document.createElement('canvas');
+            staticParkCanvas.width = WORLD_W;
+            staticParkCanvas.height = WORLD_H;
+            const sctx = staticParkCanvas.getContext('2d');
+            renderStaticPasajeParkToContext(sctx);
+        }
+
+        // Input State
+        const keys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
+        // Responsive Camera System (prevents stretching on mobile portrait while keeping 60 FPS)
+        const camera = {
+            x: 0,
+            y: 0,
+            viewW: WORLD_W,
+            viewH: WORLD_H
+        };
+
+        function screenToWorld(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const normX = (clientX - rect.left) / Math.max(1, rect.width);
+            const normY = (clientY - rect.top) / Math.max(1, rect.height);
+            return {
+                x: camera.x + normX * camera.viewW,
+                y: camera.y + normY * camera.viewH
+            };
+        }
+
+        /********************************************************************
+         * 3. INPUT CONTROLLERS (Keyboard, Mouse, Touch & Continuous Drag Pad)
+         ********************************************************************/
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || e.key === 'ArrowUp') keys.up = true;
+            if (k === 's' || e.key === 'ArrowDown') keys.down = true;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.left = true;
+            if (k === 'd' || e.key === 'ArrowRight') keys.right = true;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (gameState.status === 'playing') throwMilk();
+            }
+            if (e.key === 'Shift') {
+                e.preventDefault();
+                if (gameState.status === 'playing') triggerDash();
+            }
+            if (k === 'p' || e.key === 'Escape') {
+                if (gameState.status === 'playing' || gameState.status === 'paused') {
+                    togglePause();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || e.key === 'ArrowUp') keys.up = false;
+            if (k === 's' || e.key === 'ArrowDown') keys.down = false;
+            if (k === 'a' || e.key === 'ArrowLeft') keys.left = false;
+            if (k === 'd' || e.key === 'ArrowRight') keys.right = false;
+        });
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (gameState.status !== 'playing') return;
+            const pt = screenToWorld(e.clientX, e.clientY);
+            throwMilk(pt.x, pt.y);
+        });
+
+        // Responsive Touch Pad: supports both button taps AND smooth 360° finger sliding
+        const touchPad = document.getElementById('touch-pad');
+        let activeTouchId = null;
+
+        function updateDirectionFromTouchPad(clientX, clientY) {
+            const rect = touchPad.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dx = clientX - cx;
+            const dy = clientY - cy;
+            const deadZone = 10;
+
+            keys.left = dx < -deadZone;
+            keys.right = dx > deadZone;
+            keys.up = dy < -deadZone;
+            keys.down = dy > deadZone;
+        }
+
+        function resetTouchPadKeys() {
+            keys.up = false;
+            keys.down = false;
+            keys.left = false;
+            keys.right = false;
+        }
+
+        touchPad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const t = e.changedTouches[0];
+            activeTouchId = t.identifier;
+            updateDirectionFromTouchPad(t.clientX, t.clientY);
+        }, { passive: false });
+
+        touchPad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.identifier === activeTouchId) {
+                    updateDirectionFromTouchPad(t.clientX, t.clientY);
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        touchPad.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === activeTouchId) {
+                    activeTouchId = null;
+                    resetTouchPadKeys();
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        touchPad.addEventListener('touchcancel', () => {
+            activeTouchId = null;
+            resetTouchPadKeys();
+        });
+
+        document.querySelectorAll('.dpad-btn').forEach((btn) => {
+            const dir = btn.dataset.dir;
+            const start = (ev) => { ev.preventDefault(); keys[dir] = true; };
+            const end = (ev) => { ev.preventDefault(); keys[dir] = false; };
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        });
+
+        document.getElementById('btn-touch-throw').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (gameState.status === 'playing') throwMilk();
+        });
+
+        document.getElementById('btn-touch-dash').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (gameState.status === 'playing') triggerDash();
+        });
+
+        /********************************************************************
+         * 4. CORE GAMEPLAY MECHANICS (ULTRA-OPTIMIZED MILK DELIVERY)
+         ********************************************************************/
+        function startGame() {
+            sfx.init();
+            const cfg = DIFFICULTY_SETTINGS[currentDifficulty];
+
+            gameState.status = 'playing';
+            gameState.score = 0;
+            gameState.kidsFed = 0;
+            gameState.combo = 0;
+            gameState.maxCombo = 1;
+            gameState.timeLeft = cfg.duration;
+            gameState.spawnTimer = 0.4;
+            gameState.powerupSpawnTimer = 6.5;
+            gameState.clockSpawnTimer = 15.0; // First Clock spawns after 15 seconds
+
+            player.x = WORLD_W / 2;
+            player.y = 435;
+            player.facingX = 0;
+            player.facingY = 1;
+            player.maxMilk = cfg.maxMilk;
+            player.milk = cfg.maxMilk;
+            player.speedBoostTimer = 0;
+            player.multiMilkTimer = 0;
+            player.dashTimer = 0;
+            player.dashCooldown = 0;
+            player.smileBoostTimer = 0.8;
+            player.headTilt = 0;
+            player.headTiltVel = 0;
+            player.headOffsetX = 0;
+            player.headVelX = 0;
+            player.lockedKid = null;
+
+            truckStation.waypointIndex = 0;
+            truckStation.x = TRUCK_WAYPOINTS[0].x;
+            truckStation.y = TRUCK_WAYPOINTS[0].y;
+            truckStation.targetX = TRUCK_WAYPOINTS[0].x;
+            truckStation.targetY = TRUCK_WAYPOINTS[0].y;
+            truckStation.locationName = TRUCK_WAYPOINTS[0].label;
+            truckStation.moveInterval = cfg.truckMoveInterval;
+            truckStation.moveTimer = cfg.truckMoveInterval;
+            truckStation.isMoving = false;
+
+            kids = [];
+            projectiles = [];
+            powerups = [];
+            for (let i = 0; i < MAX_PARTICLES; i++) particlePool[i].active = false;
+            for (let i = 0; i < MAX_FLOATING_TEXTS; i++) floatingTextPool[i].active = false;
+
+            for (let i = 0; i < 3; i++) {
+                spawnKid();
+            }
+
+            lastDisplayedSec = -1;
+            lastDisplayedMilk = -1;
+            document.getElementById('start-modal').classList.add('hidden');
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('gameover-modal').classList.add('hidden');
+            updateHUD();
+        }
+
+        function relocateTruckStation() {
+            let nextIdx = 0;
+            if (truckStation.waypointIndex === 0) {
+                nextIdx = 1 + Math.floor(Math.random() * (TRUCK_WAYPOINTS.length - 1));
+            } else {
+                if (Math.random() < 0.45) {
+                    nextIdx = 0;
+                } else {
+                    const corners = [1, 2, 3, 4].filter(idx => idx !== truckStation.waypointIndex);
+                    nextIdx = corners[Math.floor(Math.random() * corners.length)];
+                }
+            }
+
+            const wp = TRUCK_WAYPOINTS[nextIdx];
+            truckStation.waypointIndex = nextIdx;
+            truckStation.targetX = wp.x;
+            truckStation.targetY = wp.y;
+            truckStation.locationName = wp.label;
+            truckStation.isMoving = true;
+
+            sfx.playDash();
+            addFloatingText(truckStation.x, truckStation.y - 45, `🚚 ¡Camión va a ${wp.label}!`, '#0284c7');
+        }
+
+        function spawnClockPowerup() {
+            const activeClocks = powerups.filter(p => p.type === 'time').length;
+            if (activeClocks >= 2) return;
+
+            const cfg = DIFFICULTY_SETTINGS[currentDifficulty];
+            let px = 155 + Math.random() * (WORLD_W - 310);
+            let py = 230 + Math.random() * (WORLD_H - 300);
+
+            for (let attempt = 0; attempt < 6; attempt++) {
+                if (Math.hypot(px - player.x, py - player.y) > 140) break;
+                px = 155 + Math.random() * (WORLD_W - 310);
+                py = 230 + Math.random() * (WORLD_H - 300);
+            }
+
+            powerups.push({
+                x: px,
+                y: py,
+                radius: 23,
+                type: 'time',
+                label: `+${cfg.clockBonus}s Tiempo Extra`,
+                color: '#10b981',
+                life: 9.5
+            });
+
+            sfx.playRefill();
+            addFloatingText(px, py - 28, `⏰ ¡Reloj +${cfg.clockBonus}s!`, '#059669');
+        }
+
+        function spawnKid() {
+            const cfg = DIFFICULTY_SETTINGS[currentDifficulty];
+            const waitingKids = kids.filter(k => k.state === 'waiting');
+            if (waitingKids.length >= cfg.maxKids) return;
+
+            const availableSpots = kidSpawnSpots.filter(spot => {
+                return !kids.some(k => Math.hypot(k.x - spot.x, k.y - spot.y) < 65);
+            });
+            if (availableSpots.length === 0) return;
+
+            const spot = availableSpots[Math.floor(Math.random() * availableSpots.length)];
+            const shirtColors = ['#ec4899', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981', '#ef4444'];
+            const hairColors = ['#1e293b', '#451a03', '#78350f', '#0f172a'];
+            const skinTones = ['#fed7aa', '#fdba74', '#f5d0a9', '#eab676'];
+
+            kids.push({
+                x: spot.x + (Math.random() * 14 - 7),
+                y: spot.y + (Math.random() * 14 - 7),
+                barrio: spot.barrio,
+                radius: 22,
+                shirtColor: shirtColors[Math.floor(Math.random() * shirtColors.length)],
+                hairColor: hairColors[Math.floor(Math.random() * hairColors.length)],
+                skinColor: skinTones[Math.floor(Math.random() * skinTones.length)],
+                isGirl: Math.random() > 0.48,
+                patience: cfg.kidPatience,
+                maxPatience: cfg.kidPatience,
+                state: 'waiting',
+                happyTimer: 0,
+                bouncePhase: Math.random() * Math.PI * 2
+            });
+        }
+
+        function spawnPowerup() {
+            const nonTimePowerups = powerups.filter(p => p.type !== 'time');
+            if (nonTimePowerups.length >= 2) return;
+            const types = [
+                { type: 'speed', label: '¡Energía de Cacao!', color: '#f59e0b' },
+                { type: 'multi', label: '¡Súper Entrega Múltiple!', color: '#3b82f6' }
+            ];
+            const chosen = types[Math.floor(Math.random() * types.length)];
+            const px = 160 + Math.random() * (WORLD_W - 320);
+            const py = 230 + Math.random() * (WORLD_H - 300);
+
+            powerups.push({
+                x: px,
+                y: py,
+                radius: 22,
+                ...chosen,
+                life: 11
+            });
+        }
+
+        function findNearestWaitingKid(fromX, fromY, maxRange = 460) {
+            let bestKid = null;
+            let bestDist = maxRange;
+            for (const k of kids) {
+                if (k.state !== 'waiting') continue;
+                const d = Math.hypot(k.x - fromX, k.y - fromY);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestKid = k;
+                }
+            }
+            return bestKid;
+        }
+
+        function triggerDash() {
+            if (player.dashCooldown > 0) return;
+            player.dashTimer = 0.24;
+            player.dashCooldown = 0.85;
+            player.headTiltVel += (player.facingX >= 0 ? -1 : 1) * 9;
+            sfx.playDash();
+            spawnParticleBurst(player.x, player.y + 10, 1, 5);
+        }
+
+        function throwMilk(targetX = null, targetY = null) {
+            if (player.milk <= 0 && player.multiMilkTimer <= 0) {
+                sfx.playEmpty();
+                addFloatingText(player.x, player.y - 38, '¡Sin leche! Ve al Camión 🚚', '#ef4444');
+                return;
+            }
+
+            let targetKid = null;
+            let dirX = player.facingX;
+            let dirY = player.facingY;
+
+            if (targetX !== null && targetY !== null) {
+                targetKid = findNearestWaitingKid(targetX, targetY, 150);
+                const aimX = targetKid ? targetKid.x : targetX;
+                const aimY = targetKid ? targetKid.y : targetY;
+                const dx = aimX - player.x;
+                const dy = aimY - player.y;
+                const len = Math.hypot(dx, dy) || 1;
+                dirX = dx / len;
+                dirY = dy / len;
+            } else {
+                targetKid = findNearestWaitingKid(player.x, player.y, 480);
+                if (targetKid) {
+                    const dx = targetKid.x - player.x;
+                    const dy = targetKid.y - player.y;
+                    const len = Math.hypot(dx, dy) || 1;
+                    dirX = dx / len;
+                    dirY = dy / len;
+                }
+            }
+
+            player.facingX = dirX;
+            player.facingY = dirY;
+
+            if (player.multiMilkTimer <= 0) {
+                player.milk = Math.max(0, player.milk - 1);
+            }
+
+            player.headTiltVel += (dirX >= 0 ? 1 : -1) * 7.5;
+            player.headVelX += dirX * 95;
+            player.smileBoostTimer = 0.65;
+
+            sfx.playThrow();
+
+            const baseAngle = Math.atan2(dirY, dirX);
+            const angles = player.multiMilkTimer > 0
+                ? [baseAngle - 0.22, baseAngle, baseAngle + 0.22]
+                : [baseAngle];
+
+            angles.forEach((ang, idx) => {
+                projectiles.push({
+                    x: player.x + Math.cos(ang) * 24,
+                    y: player.y + Math.sin(ang) * 24,
+                    vx: Math.cos(ang) * 900,
+                    vy: Math.sin(ang) * 900,
+                    radius: 18,
+                    rotation: 0,
+                    life: 1.0,
+                    homingTarget: idx === 0 || angles.length === 1 ? targetKid : null
+                });
+            });
+
+            updateHUD();
+        }
+
+        function feedKid(kid) {
+            if (kid.state !== 'waiting') return;
+            kid.state = 'happy';
+            kid.happyTimer = 0.85;
+            player.smileBoostTimer = 1.1;
+
+            gameState.kidsFed++;
+            gameState.combo++;
+            if (gameState.combo > gameState.maxCombo) {
+                gameState.maxCombo = gameState.combo;
+            }
+
+            const comboMult = Math.min(gameState.combo, 5);
+            const pts = 100 * comboMult;
+            gameState.score += pts;
+
+            sfx.playDeliver(gameState.combo);
+            spawnParticleBurst(kid.x, kid.y - 14, 0, 5);
+
+            const phrases = [
+                '¡Gracias Ñaño Jorge!',
+                '¡Qué rica leche, ñaño!',
+                '¡NutriJorge!',
+                '¡Arriba 3 Cerritos!',
+                '¡Viva Pasaje!'
+            ];
+            const msg = phrases[Math.floor(Math.random() * phrases.length)];
+            addFloatingText(kid.x, kid.y - 32, `${msg} +${pts}`, '#15803d');
+            updateHUD();
+        }
+
+        function spawnParticleBurst(x, y, spriteType = 0, count = 5) {
+            let spawned = 0;
+            for (let i = 0; i < MAX_PARTICLES && spawned < count; i++) {
+                const pt = particlePool[i];
+                if (!pt.active) {
+                    const angle = (Math.PI * 2 * spawned) / count + (Math.random() * 0.35 - 0.17);
+                    const speed = 55 + Math.random() * 65;
+                    pt.active = true;
+                    pt.x = x;
+                    pt.y = y;
+                    pt.vx = Math.cos(angle) * speed;
+                    pt.vy = Math.sin(angle) * speed - 38;
+                    pt.spriteType = spriteType;
+                    pt.life = 0.52;
+                    pt.maxLife = 0.52;
+                    pt.scale = 0.78 + Math.random() * 0.32;
+                    spawned++;
+                }
+            }
+        }
+
+        function addFloatingText(x, y, text, color = '#15803d') {
+            const safeX = Math.max(105, Math.min(WORLD_W - 105, x));
+            const safeY = Math.max(55, Math.min(WORLD_H - 35, y));
+            for (let i = 0; i < MAX_FLOATING_TEXTS; i++) {
+                const ft = floatingTextPool[i];
+                if (!ft.active) {
+                    ft.active = true;
+                    ft.x = safeX;
+                    ft.y = safeY;
+                    ft.text = text;
+                    ft.color = color;
+                    ft.life = 0.95;
+                    ft.maxLife = 0.95;
+                    return;
+                }
+            }
+            const ft = floatingTextPool[0];
+            ft.x = safeX;
+            ft.y = safeY;
+            ft.text = text;
+            ft.color = color;
+            ft.life = 0.95;
+            ft.maxLife = 0.95;
+        }
+
+        function endGame() {
+            gameState.status = 'gameover';
+            sfx.playVictory();
+
+            if (gameState.score > highScore) {
+                highScore = gameState.score;
+                localStorage.setItem('nutrijorge_highscore', highScore);
+                document.getElementById('menu-highscore').textContent = highScore;
+            }
+
+            document.getElementById('end-kids').textContent = gameState.kidsFed;
+            document.getElementById('end-score').textContent = gameState.score;
+            document.getElementById('end-combo').textContent = `x${gameState.maxCombo}`;
+
+            const medalEl = document.getElementById('end-medal');
+            const titleEl = document.getElementById('end-title');
+            if (gameState.kidsFed >= 20) {
+                medalEl.textContent = '⭐⭐⭐';
+                titleEl.textContent = '¡Héroe de la Nutrición en Pasaje!';
+            } else if (gameState.kidsFed >= 10) {
+                medalEl.textContent = '⭐⭐';
+                titleEl.textContent = '¡Excelente Jornada con el Ñaño Jorge!';
+            } else {
+                medalEl.textContent = '⭐';
+                titleEl.textContent = '¡Buen Comienzo en Pasaje!';
+            }
+
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+
+        /********************************************************************
+         * 5. UPDATE LOOP (PHYSICS, BOBBLEHEAD & AI)
+         ********************************************************************/
+        function update(dt) {
+            gameState.worldTime += dt;
+
+            for (const c of clouds) {
+                c.x += c.speed * dt;
+                if (c.x > WORLD_W + 120) c.x = -120;
+            }
+
+            if (gameState.status !== 'playing') return;
+
+            const cfg = DIFFICULTY_SETTINGS[currentDifficulty];
+
+            gameState.timeLeft -= dt;
+            if (gameState.timeLeft <= 0) {
+                gameState.timeLeft = 0;
+                updateHUD();
+                endGame();
+                return;
+            }
+
+            if (player.dashTimer > 0) player.dashTimer -= dt;
+            if (player.dashCooldown > 0) player.dashCooldown -= dt;
+            if (player.smileBoostTimer > 0) player.smileBoostTimer -= dt;
+            if (player.speedBoostTimer > 0) player.speedBoostTimer -= dt;
+            if (player.multiMilkTimer > 0) {
+                player.multiMilkTimer -= dt;
+                if (player.multiMilkTimer <= 0) updateHUD();
+            }
+
+            const banner = document.getElementById('powerup-banner');
+            if (player.speedBoostTimer > 0 || player.multiMilkTimer > 0) {
+                banner.classList.remove('hidden');
+                if (player.multiMilkTimer > 0) {
+                    document.getElementById('powerup-icon').textContent = '🌟';
+                    document.getElementById('powerup-text').textContent = `¡Súper Entrega Múltiple (${Math.ceil(player.multiMilkTimer)}s)!`;
+                } else {
+                    document.getElementById('powerup-icon').textContent = '⚡';
+                    document.getElementById('powerup-text').textContent = `¡Energía de Cacao (${Math.ceil(player.speedBoostTimer)}s)!`;
+                }
+            } else {
+                banner.classList.add('hidden');
+            }
+
+            let moveX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+            let moveY = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+
+            if (moveX !== 0 || moveY !== 0) {
+                const len = Math.hypot(moveX, moveY);
+                moveX /= len;
+                moveY /= len;
+                player.facingX = moveX;
+                player.facingY = moveY;
+                player.walkCycle += dt * 13;
+                player.headVelX += -moveX * 42 * dt * 10;
+            } else {
+                player.walkCycle = 0;
+            }
+
+            let speed = cfg.playerSpeed;
+            if (player.speedBoostTimer > 0) speed *= 1.42;
+            if (player.dashTimer > 0) speed *= 2.15;
+
+            player.x += moveX * speed * dt;
+            player.y += moveY * speed * dt;
+
+            const springForceX = -player.headOffsetX * 45 - player.headVelX * 7.5;
+            player.headVelX += springForceX * dt;
+            player.headOffsetX += player.headVelX * dt;
+            player.headOffsetX = Math.max(-10, Math.min(10, player.headOffsetX));
+
+            const tiltSpring = -player.headTilt * 38 - player.headTiltVel * 6.5;
+            player.headTiltVel += tiltSpring * dt;
+            player.headTilt += player.headTiltVel * dt;
+            player.headTilt = Math.max(-0.28, Math.min(0.28, player.headTilt));
+
+            player.x = Math.max(52, Math.min(WORLD_W - 52, player.x));
+            player.y = Math.max(198, Math.min(WORLD_H - 38, player.y));
+
+            // Smoothly follow Ñaño Jorge when viewport is narrower than WORLD_W (e.g., mobile portrait)
+            if (camera.viewW < WORLD_W) {
+                const targetCamX = Math.max(0, Math.min(WORLD_W - camera.viewW, player.x - camera.viewW / 2));
+                camera.x += (targetCamX - camera.x) * Math.min(1, dt * 10);
+            } else {
+                camera.x = 0;
+            }
+            camera.y = 0;
+
+            player.lockedKid = findNearestWaitingKid(player.x, player.y, 480);
+
+            if (truckStation.isMoving) {
+                const dx = truckStation.targetX - truckStation.x;
+                const dy = truckStation.targetY - truckStation.y;
+                const dist = Math.hypot(dx, dy);
+                const step = truckStation.speed * dt;
+                if (dist <= step) {
+                    truckStation.x = truckStation.targetX;
+                    truckStation.y = truckStation.targetY;
+                    truckStation.isMoving = false;
+                    truckStation.moveTimer = cfg.truckMoveInterval;
+                } else {
+                    truckStation.x += (dx / dist) * step;
+                    truckStation.y += (dy / dist) * step;
+                }
+            } else {
+                truckStation.moveTimer -= dt;
+                if (truckStation.moveTimer <= 0) {
+                    relocateTruckStation();
+                }
+            }
+
+            const distToTruck = Math.hypot(player.x - truckStation.x, player.y - (truckStation.y + 8));
+            if (distToTruck < truckStation.refillRadius && player.milk < player.maxMilk) {
+                gameState.refillTickTimer += dt;
+                if (gameState.refillTickTimer >= 0.08) {
+                    gameState.refillTickTimer = 0;
+                    player.milk = Math.min(player.maxMilk, player.milk + 2);
+                    sfx.playRefill();
+                    if (player.milk === player.maxMilk) {
+                        addFloatingText(player.x, player.y - 40, '¡Leche Recargada! 🥛', '#0284c7');
+                    }
+                    updateHUD();
+                }
+            }
+
+            gameState.spawnTimer -= dt;
+            if (gameState.spawnTimer <= 0) {
+                spawnKid();
+                gameState.spawnTimer = cfg.spawnInterval;
+            }
+
+            gameState.powerupSpawnTimer -= dt;
+            if (gameState.powerupSpawnTimer <= 0) {
+                spawnPowerup();
+                gameState.powerupSpawnTimer = 11 + Math.random() * 5;
+            }
+
+            gameState.clockSpawnTimer -= dt;
+            if (gameState.clockSpawnTimer <= 0) {
+                spawnClockPowerup();
+                gameState.clockSpawnTimer = cfg.clockSpawnInterval;
+            }
+
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const p = powerups[i];
+                p.life -= dt;
+                if (p.life <= 0) {
+                    powerups.splice(i, 1);
+                    continue;
+                }
+                if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius + 8) {
+                    sfx.playPowerup();
+                    addFloatingText(p.x, p.y - 25, p.label, p.color);
+                    spawnParticleBurst(p.x, p.y, 1, 6);
+
+                    if (p.type === 'speed') {
+                        player.speedBoostTimer = 7.5;
+                    } else if (p.type === 'multi') {
+                        player.multiMilkTimer = 6.5;
+                        player.milk = player.maxMilk;
+                    } else if (p.type === 'time') {
+                        gameState.timeLeft = Math.min(90, gameState.timeLeft + cfg.clockBonus);
+                    }
+                    powerups.splice(i, 1);
+                    updateHUD();
+                }
+            }
+
+            for (let i = kids.length - 1; i >= 0; i--) {
+                const k = kids[i];
+                k.bouncePhase += dt * 5;
+
+                if (k.state === 'waiting') {
+                    k.patience -= dt;
+
+                    const distToPlayer = Math.hypot(player.x - k.x, player.y - k.y);
+                    if (distToPlayer < player.radius + k.radius + 30 && (player.milk > 0 || player.multiMilkTimer > 0)) {
+                        if (player.multiMilkTimer <= 0) player.milk--;
+                        feedKid(k);
+                        continue;
+                    }
+
+                    if (k.patience <= 0) {
+                        gameState.combo = 0;
+                        gameState.timeLeft = Math.max(1, gameState.timeLeft - 1.5);
+                        addFloatingText(k.x, k.y - 25, '¡Se fue sin leche! -1.5s 😢', '#dc2626');
+                        kids.splice(i, 1);
+                        updateHUD();
+                    }
+                } else if (k.state === 'happy') {
+                    k.happyTimer -= dt;
+                    if (k.happyTimer <= 0) {
+                        kids.splice(i, 1);
+                    }
+                }
+            }
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const proj = projectiles[i];
+
+                if (proj.homingTarget && proj.homingTarget.state === 'waiting') {
+                    const dx = proj.homingTarget.x - proj.x;
+                    const dy = proj.homingTarget.y - proj.y;
+                    const dist = Math.hypot(dx, dy) || 1;
+                    const desiredVx = (dx / dist) * 920;
+                    const desiredVy = (dy / dist) * 920;
+                    proj.vx += (desiredVx - proj.vx) * Math.min(1, dt * 16);
+                    proj.vy += (desiredVy - proj.vy) * Math.min(1, dt * 16);
+                }
+
+                proj.x += proj.vx * dt;
+                proj.y += proj.vy * dt;
+                proj.rotation += dt * 12;
+                proj.life -= dt;
+
+                let hit = false;
+                for (let j = 0; j < kids.length; j++) {
+                    const k = kids[j];
+                    if (k.state !== 'waiting') continue;
+                    if (Math.hypot(proj.x - k.x, proj.y - k.y) < proj.radius + k.radius + 16) {
+                        feedKid(k);
+                        hit = true;
+                        break;
+                    }
+                }
+
+                if (hit || proj.life <= 0 || proj.x < 0 || proj.x > WORLD_W || proj.y < 0 || proj.y > WORLD_H) {
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            for (let i = 0; i < MAX_PARTICLES; i++) {
+                const pt = particlePool[i];
+                if (!pt.active) continue;
+                pt.x += pt.vx * dt;
+                pt.y += pt.vy * dt;
+                pt.vy += 170 * dt;
+                pt.life -= dt;
+                if (pt.life <= 0) pt.active = false;
+            }
+
+            for (let i = 0; i < MAX_FLOATING_TEXTS; i++) {
+                const ft = floatingTextPool[i];
+                if (!ft.active) continue;
+                ft.y -= 40 * dt;
+                ft.life -= dt;
+                if (ft.life <= 0) ft.active = false;
+            }
+
+            const sec = Math.ceil(gameState.timeLeft);
+            if (sec !== lastDisplayedSec) {
+                lastDisplayedSec = sec;
+                const timerEl = document.getElementById('hud-timer');
+                timerEl.textContent = `${sec}s`;
+                timerEl.className = sec <= 10
+                    ? 'font-display font-bold text-sm sm:text-base text-red-400 animate-pulse leading-tight'
+                    : 'font-display font-bold text-sm sm:text-base text-emerald-300 leading-tight';
+            }
+        }
+
+        /********************************************************************
+         * 6. RENDERING PIPELINE (60 FPS Responsive Camera + 3D Ñaño Jorge)
+         ********************************************************************/
+        function draw() {
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+
+            if (staticParkCanvas) {
+                ctx.drawImage(staticParkCanvas, 0, 0);
+            }
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.86)';
+            for (let i = 0; i < clouds.length; i++) {
+                const c = clouds[i];
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, 17 * c.scale, 0, Math.PI * 2);
+                ctx.arc(c.x + 15 * c.scale, c.y - 4 * c.scale, 21 * c.scale, 0, Math.PI * 2);
+                ctx.arc(c.x + 32 * c.scale, c.y, 16 * c.scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.lineWidth = 2;
+            const ripple = (gameState.worldTime * 18) % 28;
+            ctx.beginPath();
+            ctx.ellipse(310, 433, 68 + ripple, 28 + ripple * 0.35, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            drawNutriTruck(truckStation.x, truckStation.y);
+
+            for (let i = 0; i < powerups.length; i++) {
+                drawPowerup(powerups[i]);
+            }
+
+            if (gameState.status === 'playing' && player.lockedKid && (player.milk > 0 || player.multiMilkTimer > 0)) {
+                drawAutoAimReticle(player.lockedKid);
+            }
+
+            for (let i = 0; i < kids.length; i++) {
+                drawKid(kids[i]);
+            }
+
+            drawPlayer();
+
+            for (let i = 0; i < projectiles.length; i++) {
+                drawMilkCarton(projectiles[i]);
+            }
+
+            for (let i = 0; i < MAX_PARTICLES; i++) {
+                const pt = particlePool[i];
+                if (pt.active) drawParticle(pt);
+            }
+
+            for (let i = 0; i < MAX_FLOATING_TEXTS; i++) {
+                const ft = floatingTextPool[i];
+                if (!ft.active) continue;
+                const alpha = Math.max(0, ft.life / ft.maxLife);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.font = 'bold 16.5px "Fredoka", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.lineWidth = 3.5;
+                ctx.strokeStyle = '#ffffff';
+                ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillStyle = ft.color;
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+
+            ctx.restore();
+
+            // Off-screen indicators on mobile portrait so player always sees Truck & Kids
+            if (camera.viewW < WORLD_W && gameState.status === 'playing') {
+                drawOffscreenIndicators();
+            }
+        }
+
+        function drawOffscreenIndicators() {
+            const margin = 34;
+            const leftEdge = camera.x + margin;
+            const rightEdge = camera.x + camera.viewW - margin;
+
+            // Truck indicator if outside camera view
+            if (truckStation.x < camera.x + 20 || truckStation.x > camera.x + camera.viewW - 20) {
+                const isLeft = truckStation.x < camera.x + 20;
+                const ix = isLeft ? margin : camera.viewW - margin;
+                const iy = Math.max(85, Math.min(camera.viewH - 140, truckStation.y));
+
+                ctx.save();
+                ctx.fillStyle = '#0284c7';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(ix, iy, 22, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 11px "Fredoka", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(isLeft ? '◀ 🚚' : '🚚 ▶', ix, iy + 4);
+                ctx.restore();
+            }
+
+            // Waiting kids indicators
+            for (let i = 0; i < kids.length; i++) {
+                const k = kids[i];
+                if (k.state !== 'waiting') continue;
+                if (k.x < leftEdge || k.x > rightEdge) {
+                    const isLeft = k.x < leftEdge;
+                    const ix = isLeft ? 24 : camera.viewW - 24;
+                    const iy = Math.max(85, Math.min(camera.viewH - 140, k.y));
+
+                    ctx.save();
+                    ctx.fillStyle = k.patience < k.maxPatience * 0.35 ? '#ef4444' : '#16a34a';
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(ix, iy, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 9.5px "Fredoka", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(isLeft ? '◀🥛' : '🥛▶', ix, iy + 3.5);
+                    ctx.restore();
+                }
+            }
+        }
+
+        function renderStaticPasajeParkToContext(g) {
+            const skyGrad = g.createLinearGradient(0, 0, 0, 195);
+            skyGrad.addColorStop(0, '#7dd3fc');
+            skyGrad.addColorStop(1, '#e0f2fe');
+            g.fillStyle = skyGrad;
+            g.fillRect(0, 0, WORLD_W, 195);
+
+            g.fillStyle = '#fde047';
+            g.beginPath();
+            g.arc(980, 46, 28, 0, Math.PI * 2);
+            g.fill();
+
+            drawPasajeCentralSkylineTo(g);
+
+            g.fillStyle = '#fcd34d';
+            g.fillRect(0, 192, WORLD_W, WORLD_H - 192);
+
+            g.fillStyle = '#f4a27e';
+            g.beginPath();
+            g.moveTo(220, 195);
+            g.lineTo(880, 195);
+            g.lineTo(960, WORLD_H);
+            g.lineTo(140, WORLD_H);
+            g.closePath();
+            g.fill();
+
+            g.fillStyle = '#fde078';
+            g.beginPath();
+            g.ellipse(WORLD_W / 2, 390, 240, 95, 0, 0, Math.PI * 2);
+            g.fill();
+
+            g.strokeStyle = '#fde078';
+            g.lineWidth = 38;
+            g.beginPath();
+            g.moveTo(120, 230);
+            g.lineTo(980, 580);
+            g.moveTo(980, 230);
+            g.lineTo(120, 580);
+            g.stroke();
+
+            g.fillStyle = '#15803d';
+            g.strokeStyle = '#f59e0b';
+            g.lineWidth = 4;
+            roundRect(g, 455, 212, 190, 48, 22, true, true);
+            roundRect(g, 465, 445, 170, 38, 18, true, true);
+
+            drawLeftParkFountainTo(g, 310, 420, false);
+            drawCentralMonumentTo(g, 550, 555);
+            drawRightWavyCanopyTo(g, 805, 425);
+
+            g.fillStyle = '#0f172a';
+            for (let x = 35; x < WORLD_W; x += 48) {
+                g.fillRect(x, 632, 6, 14);
+            }
+
+            for (const palm of parkPalms) {
+                drawPalmTreeTo(g, palm.x, palm.y, palm.scale);
+            }
+            for (const lamp of parkLampposts) {
+                drawDoubleLamppostTo(g, lamp.x, lamp.y);
+            }
+
+            for (const sec of pasajeSectors) {
+                drawSectorPortalTo(g, sec);
+            }
+        }
+
+        function drawPasajeCentralSkylineTo(g) {
+            g.fillStyle = '#fde68a';
+            g.strokeStyle = '#d97706';
+            g.lineWidth = 2;
+            roundRect(g, 18, 82, 185, 110, 4, true, true);
+
+            g.fillStyle = '#ea580c';
+            g.fillRect(18, 82, 185, 8);
+
+            g.fillStyle = '#b45309';
+            g.font = '900 8.5px "Inter", sans-serif';
+            g.textAlign = 'center';
+            g.fillText('PUEBLO LIBRE, DE LIBRES Y FUERTES', 110, 100);
+
+            g.fillStyle = '#ffffff';
+            g.strokeStyle = '#d97706';
+            g.lineWidth = 1.5;
+            roundRect(g, 96, 110, 28, 34, 4, true, true);
+            g.fillStyle = '#ef4444';
+            g.fillRect(99, 113, 11, 14);
+            g.fillStyle = '#22c55e';
+            g.fillRect(110, 113, 11, 14);
+            g.fillStyle = '#3b82f6';
+            g.fillRect(99, 127, 22, 13);
+
+            g.fillStyle = '#fffbeb';
+            g.strokeStyle = '#d97706';
+            g.lineWidth = 2;
+            g.beginPath();
+            g.arc(165, 78, 28, Math.PI, 0);
+            g.fill();
+            g.stroke();
+            g.strokeStyle = '#ea580c';
+            for (let i = -20; i <= 20; i += 10) {
+                g.beginPath();
+                g.moveTo(165, 50);
+                g.lineTo(165 + i, 78);
+                g.stroke();
+            }
+
+            g.fillStyle = '#fef3c7';
+            g.strokeStyle = '#d97706';
+            g.lineWidth = 2;
+            roundRect(g, 202, 74, 215, 118, 4, true, true);
+
+            const glassGrad = g.createLinearGradient(268, 92, 352, 165);
+            glassGrad.addColorStop(0, '#0284c7');
+            glassGrad.addColorStop(0.5, '#1e3a8a');
+            glassGrad.addColorStop(1, '#0f766e');
+            g.fillStyle = glassGrad;
+            g.beginPath();
+            g.arc(310, 136, 36, Math.PI, 0);
+            g.lineTo(346, 162);
+            g.lineTo(274, 162);
+            g.closePath();
+            g.fill();
+            g.strokeStyle = '#ea580c';
+            g.lineWidth = 3;
+            g.stroke();
+
+            drawChurchTowerTo(g, 228, 24);
+            drawChurchTowerTo(g, 392, 24);
+
+            g.fillStyle = '#fef3c7';
+            g.strokeStyle = '#d97706';
+            g.lineWidth = 1.5;
+            roundRect(g, 420, 108, 120, 84, 3, true, true);
+            g.fillStyle = '#451a03';
+            for (let wx = 432; wx < 530; wx += 18) {
+                g.fillRect(wx, 122, 10, 20);
+                g.fillRect(wx, 154, 10, 26);
+            }
+
+            g.fillStyle = '#e2e8f0';
+            g.strokeStyle = '#0d9488';
+            g.lineWidth = 2;
+            roundRect(g, 555, 62, 150, 130, 4, true, true);
+            g.fillStyle = '#0d9488';
+            for (let bx = 568; bx <= 690; bx += 38) {
+                g.fillRect(bx, 66, 8, 124);
+            }
+            g.fillStyle = '#0f766e';
+            for (let by = 74; by < 175; by += 24) {
+                g.fillRect(562, by, 136, 14);
+            }
+
+            const flagColors = [
+                ['#facc15', '#2563eb', '#ef4444'],
+                ['#16a34a', '#facc15', '#16a34a'],
+                ['#ef4444', '#facc15', '#16a34a']
+            ];
+            [745, 780, 815].forEach((fx, idx) => {
+                g.strokeStyle = '#475569';
+                g.lineWidth = 2.5;
+                g.beginPath();
+                g.moveTo(fx, 192);
+                g.lineTo(fx, 52);
+                g.stroke();
+                const cols = flagColors[idx];
+                for (let c = 0; c < 3; c++) {
+                    g.fillStyle = cols[c];
+                    g.fillRect(fx + 2, 54 + c * 6, 22, 6);
+                }
+            });
+
+            g.fillStyle = '#fef08a';
+            g.strokeStyle = '#ca8a04';
+            roundRect(g, 845, 110, 105, 82, 3, true, true);
+
+            g.fillStyle = '#ea580c';
+            g.strokeStyle = '#9a3412';
+            roundRect(g, 952, 68, 132, 124, 4, true, true);
+            g.fillStyle = '#fef3c7';
+            for (let ry = 82; ry < 175; ry += 26) {
+                for (let rx = 964; rx < 1072; rx += 22) {
+                    g.fillRect(rx, ry, 14, 16);
+                }
+            }
+
+            g.fillStyle = '#334155';
+            g.fillRect(0, 188, WORLD_W, 8);
+        }
+
+        function drawChurchTowerTo(g, centerX, topY) {
+            g.fillStyle = '#fffbeb';
+            g.strokeStyle = '#ea580c';
+            g.lineWidth = 2.5;
+            roundRect(g, centerX - 24, topY + 28, 48, 140, 3, true, true);
+            roundRect(g, centerX - 16, topY + 6, 32, 26, 3, true, true);
+            g.fillStyle = '#ea580c';
+            g.beginPath();
+            g.moveTo(centerX - 18, topY + 6);
+            g.lineTo(centerX, topY - 12);
+            g.lineTo(centerX + 18, topY + 6);
+            g.closePath();
+            g.fill();
+
+            g.fillStyle = '#1e293b';
+            g.beginPath();
+            g.arc(centerX, topY + 48, 9, 0, Math.PI * 2);
+            g.fill();
+            g.strokeStyle = '#f59e0b';
+            g.lineWidth = 2;
+            g.stroke();
+
+            g.fillStyle = '#78350f';
+            g.beginPath();
+            g.arc(centerX - 7, topY + 82, 4, Math.PI, 0);
+            g.fillRect(centerX - 11, topY + 82, 8, 22);
+            g.arc(centerX + 7, topY + 82, 4, Math.PI, 0);
+            g.fillRect(centerX + 3, topY + 82, 8, 22);
+            g.fill();
+        }
+
+        function drawLeftParkFountainTo(g, cx, cy) {
+            g.fillStyle = '#e7e5e4';
+            g.strokeStyle = '#a8a29e';
+            g.lineWidth = 3;
+            g.beginPath();
+            g.ellipse(cx, cy + 15, 122, 54, 0, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+
+            const poolGrad = g.createRadialGradient(cx, cy + 15, 15, cx, cy + 15, 114);
+            poolGrad.addColorStop(0, '#38bdf8');
+            poolGrad.addColorStop(1, '#0284c7');
+            g.fillStyle = poolGrad;
+            g.beginPath();
+            g.ellipse(cx, cy + 15, 112, 46, 0, 0, Math.PI * 2);
+            g.fill();
+
+            g.fillStyle = '#1d4ed8';
+            g.fillRect(cx - 56, cy - 12, 112, 34);
+
+            g.fillStyle = '#d6d3d1';
+            g.strokeStyle = '#78716c';
+            g.lineWidth = 2;
+            g.beginPath();
+            g.ellipse(cx, cy - 16, 86, 28, 0, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+
+            g.fillStyle = '#15803d';
+            g.beginPath();
+            g.ellipse(cx, cy - 20, 78, 22, 0, 0, Math.PI * 2);
+            g.fill();
+
+            g.fillStyle = '#f8fafc';
+            g.beginPath();
+            g.ellipse(cx, cy - 22, 46, 11, 0, 0, Math.PI * 2);
+            g.fill();
+        }
+
+        function drawCentralMonumentTo(g, cx, cy) {
+            g.fillStyle = '#e11d48';
+            g.strokeStyle = '#fef08a';
+            g.lineWidth = 3;
+            g.beginPath();
+            g.ellipse(cx, cy, 92, 40, 0, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+
+            for (let s = 3; s >= 1; s--) {
+                g.fillStyle = s % 2 === 0 ? '#9a3412' : '#78350f';
+                g.strokeStyle = '#fcd34d';
+                g.lineWidth = 1.5;
+                g.beginPath();
+                g.moveTo(cx, cy - s * 11 - 6);
+                g.lineTo(cx + s * 18 + 10, cy);
+                g.lineTo(cx, cy + s * 10 + 4);
+                g.lineTo(cx - s * 18 - 10, cy);
+                g.closePath();
+                g.fill();
+                g.stroke();
+            }
+
+            g.fillStyle = '#a8a29e';
+            g.strokeStyle = '#57534e';
+            roundRect(g, cx - 14, cy - 52, 28, 46, 3, true, true);
+
+            g.fillStyle = '#713f12';
+            g.beginPath();
+            g.arc(cx, cy - 64, 7, 0, Math.PI * 2);
+            g.fill();
+            g.fillRect(cx - 6, cy - 57, 12, 14);
+        }
+
+        function drawRightWavyCanopyTo(g, cx, cy) {
+            g.fillStyle = 'rgba(148, 163, 184, 0.55)';
+            g.beginPath();
+            g.ellipse(cx, cy + 25, 95, 42, -0.15, 0, Math.PI * 2);
+            g.fill();
+
+            g.fillStyle = '#78350f';
+            g.fillRect(cx - 55, cy - 5, 10, 42);
+            g.fillRect(cx - 5, cy - 12, 10, 42);
+            g.fillRect(cx + 45, cy - 18, 10, 42);
+
+            const roofGrad = g.createLinearGradient(cx - 80, cy - 55, cx + 80, cy);
+            roofGrad.addColorStop(0, '#1d4ed8');
+            roofGrad.addColorStop(0.5, '#3b82f6');
+            roofGrad.addColorStop(1, '#1e40af');
+            g.fillStyle = roofGrad;
+            g.strokeStyle = '#ffffff';
+            g.lineWidth = 3;
+
+            g.beginPath();
+            g.moveTo(cx - 82, cy - 28);
+            g.bezierCurveTo(cx - 35, cy - 62, cx + 25, cy - 12, cx + 78, cy - 42);
+            g.lineTo(cx + 92, cy - 12);
+            g.bezierCurveTo(cx + 35, cy + 16, cx - 25, cy - 30, cx - 68, cy + 2);
+            g.closePath();
+            g.fill();
+            g.stroke();
+        }
+
+        function drawPalmTreeTo(g, x, y, scale = 1) {
+            g.save();
+            g.translate(x, y);
+            g.scale(scale, scale);
+
+            g.fillStyle = 'rgba(0,0,0,0.16)';
+            g.beginPath();
+            g.ellipse(0, 16, 18, 7, 0, 0, Math.PI * 2);
+            g.fill();
+
+            g.strokeStyle = '#78350f';
+            g.lineWidth = 6;
+            g.beginPath();
+            g.moveTo(0, 16);
+            g.quadraticCurveTo(3, -5, 0, -24);
+            g.stroke();
+
+            g.strokeStyle = '#15803d';
+            g.lineWidth = 4.5;
+            g.lineCap = 'round';
+            const angles = [-2.6, -2.0, -1.2, -0.5, 0.2, 0.9];
+            for (const a of angles) {
+                g.beginPath();
+                g.moveTo(0, -24);
+                g.quadraticCurveTo(Math.cos(a) * 14, -28 + Math.sin(a) * 10, Math.cos(a) * 24, -18 + Math.sin(a) * 14);
+                g.stroke();
+            }
+            g.restore();
+        }
+
+        function drawDoubleLamppostTo(g, x, y) {
+            g.save();
+            g.translate(x, y);
+            g.strokeStyle = '#0f172a';
+            g.lineWidth = 3;
+            g.beginPath();
+            g.moveTo(0, 12);
+            g.lineTo(0, -22);
+            g.moveTo(-8, -18);
+            g.quadraticCurveTo(0, -24, 8, -18);
+            g.stroke();
+
+            g.fillStyle = '#ffffff';
+            g.strokeStyle = '#cbd5e1';
+            g.lineWidth = 1;
+            g.beginPath();
+            g.arc(-8, -20, 4.2, 0, Math.PI * 2);
+            g.arc(8, -20, 4.2, 0, Math.PI * 2);
+            g.fill();
+            g.stroke();
+            g.restore();
+        }
+
+        function drawSectorPortalTo(g, sec) {
+            g.save();
+            g.translate(sec.x, sec.y);
+
+            g.fillStyle = 'rgba(0,0,0,0.22)';
+            roundRect(g, -58, -22, 116, 36, 10, true, false);
+
+            g.fillStyle = '#ffffff';
+            g.strokeStyle = sec.color;
+            g.lineWidth = 3;
+            roundRect(g, -56, -26, 112, 36, 10, true, true);
+
+            g.fillStyle = sec.roof;
+            roundRect(g, -54, -24, 108, 13, 6, true, false);
+
+            g.fillStyle = '#fef08a';
+            g.font = 'bold 7.5px "Inter", sans-serif';
+            g.textAlign = 'center';
+            g.fillText(sec.sub, 0, -15);
+
+            g.fillStyle = '#0f172a';
+            g.font = '900 11px "Fredoka", sans-serif';
+            g.fillText(`${sec.icon} ${sec.name}`, 0, 2);
+
+            g.restore();
+        }
+
+        function drawAutoAimReticle(kid) {
+            ctx.save();
+            ctx.translate(kid.x, kid.y);
+            const pulse = 1 + Math.sin(gameState.worldTime * 10) * 0.08;
+            ctx.strokeStyle = '#16a34a';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 2, 28 * pulse, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#16a34a';
+            ctx.font = 'bold 9px "Inter", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🎯 AUTO', 0, 38);
+            ctx.restore();
+        }
+
+        function drawNutriTruck(x, y) {
+            if (truckStation.isMoving) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(2, 132, 199, 0.55)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x, y + 10);
+                ctx.lineTo(truckStation.targetX, truckStation.targetY + 10);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(14, 165, 233, 0.25)';
+                ctx.strokeStyle = '#0284c7';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(truckStation.targetX, truckStation.targetY + 12, truckStation.refillRadius * 0.85, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.translate(x, y);
+
+            const pulse = 1 + Math.sin(gameState.worldTime * 5) * 0.05;
+            const isAboutToMove = !truckStation.isMoving && truckStation.moveTimer <= 2.5;
+            ctx.strokeStyle = isAboutToMove
+                ? 'rgba(245, 158, 11, 0.9)'
+                : (player.milk <= 1 ? 'rgba(239, 68, 68, 0.85)' : 'rgba(14, 165, 233, 0.7)');
+            ctx.fillStyle = isAboutToMove
+                ? 'rgba(254, 243, 199, 0.35)'
+                : (player.milk <= 1 ? 'rgba(254, 202, 202, 0.32)' : 'rgba(224, 242, 254, 0.38)');
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 8, truckStation.refillRadius * pulse, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (truckBodySpriteCanvas) {
+                ctx.drawImage(truckBodySpriteCanvas, -72, -46);
+            }
+
+            ctx.fillStyle = isAboutToMove ? '#dc2626' : '#15803d';
+            ctx.font = 'bold 8.5px "Inter", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(
+                truckStation.isMoving
+                    ? '¡EN MOVIMIENTO!'
+                    : (isAboutToMove ? `¡MUEVE EN ${Math.ceil(truckStation.moveTimer)}s!` : 'RECARGA AQUÍ'),
+                -15,
+                2
+            );
+
+            if (!truckStation.isMoving) {
+                const moveRatio = Math.max(0, truckStation.moveTimer / truckStation.moveInterval);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+                ctx.fillRect(-46, -42, 92, 6);
+                ctx.fillStyle = isAboutToMove ? '#f59e0b' : '#38bdf8';
+                ctx.fillRect(-44, -40.5, 88 * moveRatio, 3.5);
+            }
+
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+
+            const bob = Math.sin(player.walkCycle) * 3.2;
+            const headScale = CABEZON_SCALES[gameState.cabezonMode] || 1.82;
+
+            if (player.speedBoostTimer > 0 || player.multiMilkTimer > 0) {
+                ctx.strokeStyle = player.multiMilkTimer > 0 ? '#3b82f6' : '#facc15';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(0, 0, player.radius + 9 + Math.sin(gameState.worldTime * 10) * 3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = 'rgba(0,0,0,0.24)';
+            ctx.beginPath();
+            ctx.ellipse(0, 26, 22, 8.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            const footOffset = Math.sin(player.walkCycle) * 6.5;
+            ctx.fillStyle = '#1e3a8a';
+            roundRect(ctx, -13, 10 + bob * 0.4, 11, 14 + footOffset * 0.4, 4, true, false);
+            roundRect(ctx, 2, 10 + bob * 0.4, 11, 14 - footOffset * 0.4, 4, true, false);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.ellipse(-8, 23 + footOffset * 0.5, 6.5, 4, 0, 0, Math.PI * 2);
+            ctx.ellipse(8, 23 - footOffset * 0.5, 6.5, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            roundRect(ctx, -19, -8 + bob, 38, 22, 11, true, true);
+
+            ctx.fillStyle = '#271c15';
+            ctx.fillRect(-18, 9 + bob, 36, 5);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-4, 8.5 + bob, 8, 6);
+
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -3 + bob);
+            ctx.lineTo(0, 9 + bob);
+            ctx.stroke();
+            ctx.strokeRect(4, -1 + bob, 7, 6);
+
+            ctx.fillStyle = '#f8dcc6';
+            ctx.beginPath();
+            ctx.arc(-20, 2 + bob, 5.2, 0, Math.PI * 2);
+            ctx.arc(20, 2 + bob, 5.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (player.milk > 0 || player.multiMilkTimer > 0) {
+                const handX = player.facingX * 15 + 14;
+                const handY = player.facingY * 7 + 2 + bob;
+                if (milkSpriteCanvas) {
+                    ctx.drawImage(milkSpriteCanvas, handX - 11, handY - 13, 22, 25);
+                }
+            }
+
+            // BIG BOBBLEHEAD ("ÑAÑO JORGE" 3D PIXAR-STYLE PORTRAIT)
+            ctx.save();
+            ctx.translate(player.headOffsetX, -22 + bob * 1.15);
+            ctx.rotate(player.headTilt);
+
+            const drawSize = 56 * headScale;
+            const headSprite = player.smileBoostTimer > 0 ? jorgeHeadHappyCanvas : jorgeHeadNormalCanvas;
+            if (headSprite) {
+                ctx.drawImage(headSprite, -drawSize / 2, -drawSize / 2 - 4, drawSize, drawSize);
+            }
+            ctx.restore();
+
+            const badgeY = -26 - 24 * headScale + bob;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            roundRect(ctx, -38, badgeY - 12, 76, 15, 6, true, false);
+            ctx.fillStyle = '#facc15';
+            ctx.font = 'bold 9.5px "Fredoka", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('ÑAÑO JORGE', 0, badgeY - 1.5);
+
+            ctx.restore();
+        }
+
+        function drawKid(k) {
+            ctx.save();
+            ctx.translate(k.x, k.y);
+            const jump = k.state === 'happy'
+                ? Math.abs(Math.sin(k.bouncePhase * 3)) * -10
+                : Math.sin(k.bouncePhase) * 2;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.beginPath();
+            ctx.ellipse(0, 20, 14, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = k.shirtColor;
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1.8;
+            roundRect(ctx, -12, -2 + jump, 24, 20, 7, true, true);
+
+            if (k.state === 'happy' || k.patience < k.maxPatience * 0.45) {
+                ctx.strokeStyle = k.skinColor;
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(-11, 2 + jump);
+                ctx.lineTo(-19, -8 + jump);
+                ctx.moveTo(11, 2 + jump);
+                ctx.lineTo(19, -8 + jump);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = k.skinColor;
+            ctx.strokeStyle = '#7c2d12';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, -12 + jump, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = k.hairColor;
+            ctx.beginPath();
+            ctx.arc(0, -14 + jump, 12.2, Math.PI, 0);
+            ctx.fill();
+            if (k.isGirl) {
+                ctx.beginPath();
+                ctx.arc(-12, -13 + jump, 4.5, 0, Math.PI * 2);
+                ctx.arc(12, -13 + jump, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(-4, -12 + jump, 1.8, 0, Math.PI * 2);
+            ctx.arc(4, -12 + jump, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#7c2d12';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            if (k.state === 'happy') {
+                ctx.arc(0, -8.5 + jump, 4.5, 0, Math.PI);
+            } else {
+                ctx.arc(0, -8 + jump, 3, 0.15 * Math.PI, 0.85 * Math.PI);
+            }
+            ctx.stroke();
+
+            if (k.state === 'waiting') {
+                const ratio = Math.max(0, k.patience / k.maxPatience);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+                roundRect(ctx, -28, 22, 56, 12, 5, true, false);
+                ctx.fillStyle = '#fde047';
+                ctx.font = 'bold 7.5px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(k.barrio, 0, 30.5);
+
+                ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                ctx.strokeStyle = '#0284c7';
+                ctx.lineWidth = 1.5;
+                roundRect(ctx, -18, -42 + jump, 36, 14, 6, true, true);
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(-14, -33 + jump, 28, 3.5);
+                ctx.fillStyle = ratio > 0.5 ? '#22c55e' : (ratio > 0.25 ? '#f59e0b' : '#ef4444');
+                ctx.fillRect(-14, -33 + jump, 28 * ratio, 3.5);
+
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 7.5px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('¡LECHE!', 0, -34.5 + jump);
+            } else if (heartSpriteCanvas) {
+                ctx.drawImage(heartSpriteCanvas, -12, -52 + jump, 24, 24);
+            }
+
+            ctx.restore();
+        }
+
+        function drawMilkCarton(proj) {
+            ctx.save();
+            ctx.translate(proj.x, proj.y);
+            ctx.rotate(proj.rotation);
+            if (milkSpriteCanvas) {
+                ctx.drawImage(milkSpriteCanvas, -14, -16, 28, 32);
+            }
+            ctx.restore();
+        }
+
+        function drawParticle(pt) {
+            const alpha = Math.max(0, pt.life / pt.maxLife);
+            const sprite = pt.spriteType === 0 ? heartSpriteCanvas : starSpriteCanvas;
+            if (!sprite) return;
+            const size = 24 * pt.scale;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(sprite, pt.x - size / 2, pt.y - size / 2, size, size);
+            ctx.restore();
+        }
+
+        function drawPowerup(p) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            const bounce = Math.sin(gameState.worldTime * 6) * 4;
+
+            if (p.type === 'time') {
+                const ringPulse = 1 + Math.sin(gameState.worldTime * 10) * 0.14;
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, bounce, (p.radius + 9) * ringPulse, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            const sprite = powerupSprites[p.type];
+            if (sprite) {
+                ctx.drawImage(sprite, -32, bounce - 32);
+            }
+
+            if (p.type === 'time') {
+                ctx.font = 'bold 10px "Fredoka", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#065f46';
+                ctx.fillText('+TIEMPO', 0, bounce + p.radius + 11);
+            }
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
+        }
+
+        /********************************************************************
+         * 7. HUD, UI CONTROLS & MAIN ANIMATION LOOP
+         ********************************************************************/
+        function updateHUD() {
+            document.getElementById('hud-kids').textContent = gameState.kidsFed;
+            document.getElementById('hud-score').textContent = gameState.score;
+
+            const comboEl = document.getElementById('hud-combo');
+            if (gameState.combo >= 2) {
+                comboEl.classList.remove('hidden');
+                comboEl.textContent = `x${Math.min(gameState.combo, 5)}`;
+            } else {
+                comboEl.classList.add('hidden');
+            }
+
+            const isMulti = player.multiMilkTimer > 0;
+            if (player.milk !== lastDisplayedMilk || isMulti !== lastDisplayedMulti) {
+                lastDisplayedMilk = player.milk;
+                lastDisplayedMulti = isMulti;
+                const milkContainer = document.getElementById('hud-milk-icons');
+                if (isMulti) {
+                    milkContainer.innerHTML = '<span class="text-amber-300 font-bold text-xs">🌟 ILIMITADA</span>';
+                } else {
+                    milkContainer.innerHTML = '';
+                    for (let i = 0; i < player.maxMilk; i++) {
+                        const span = document.createElement('span');
+                        span.textContent = '🥛';
+                        span.className = i < player.milk ? 'opacity-100 scale-100' : 'opacity-25 grayscale scale-90';
+                        milkContainer.appendChild(span);
+                    }
+                }
+            }
+
+            const lowBanner = document.getElementById('low-milk-banner');
+            if (player.milk === 0 && player.multiMilkTimer <= 0 && gameState.status === 'playing') {
+                lowBanner.classList.remove('hidden');
+            } else {
+                lowBanner.classList.add('hidden');
+            }
+        }
+
+        function togglePause() {
+            if (gameState.status === 'playing') {
+                gameState.status = 'paused';
+                document.getElementById('pause-modal').classList.remove('hidden');
+                document.getElementById('icon-pause').className = 'fas fa-play text-sm';
+            } else if (gameState.status === 'paused') {
+                gameState.status = 'playing';
+                document.getElementById('pause-modal').classList.add('hidden');
+                document.getElementById('icon-pause').className = 'fas fa-pause text-sm';
+            }
+        }
+
+        document.getElementById('btn-cabezon').addEventListener('click', () => {
+            gameState.cabezonMode = (gameState.cabezonMode + 1) % CABEZON_SCALES.length;
+            document.getElementById('lbl-cabezon').textContent = CABEZON_LABELS[gameState.cabezonMode];
+            player.headTiltVel += 9;
+            player.smileBoostTimer = 0.85;
+            sfx.playRefill();
+        });
+
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentDifficulty = btn.dataset.diff;
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.className = 'diff-btn px-3.5 py-1.5 rounded-xl text-xs font-bold border-2 border-slate-300 bg-white text-slate-700';
+                });
+                btn.className = 'diff-btn px-3.5 py-1.5 rounded-xl text-xs font-bold border-2 border-blue-600 bg-blue-600 text-white shadow';
+            });
+        });
+
+        document.getElementById('btn-start-game').addEventListener('click', startGame);
+        document.getElementById('btn-resume-game').addEventListener('click', togglePause);
+        document.getElementById('btn-restart-pause').addEventListener('click', startGame);
+        document.getElementById('btn-play-again').addEventListener('click', startGame);
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            if (gameState.status === 'playing' || gameState.status === 'paused') togglePause();
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            const muted = sfx.toggleMute();
+            document.getElementById('icon-sound').className = muted ? 'fas fa-volume-mute text-xs sm:text-sm' : 'fas fa-volume-up text-xs sm:text-sm';
+        });
+
+        // Fullscreen Button for immersive mobile & desktop play
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            const shell = document.getElementById('game-shell');
+            if (!document.fullscreenElement) {
+                if (shell.requestFullscreen) shell.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('icon-fullscreen');
+            icon.className = document.fullscreenElement ? 'fas fa-compress text-xs sm:text-sm' : 'fas fa-expand text-xs sm:text-sm';
+            setTimeout(resizeCanvas, 60);
+        });
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const rect = container.getBoundingClientRect();
+            const aspect = Math.max(0.45, rect.width / Math.max(1, rect.height));
+
+            // Keep crisp 650px vertical world height, and adapt horizontal viewport on portrait screens so nothing stretches
+            camera.viewH = WORLD_H;
+            camera.viewW = Math.min(WORLD_W, Math.max(540, Math.round(WORLD_H * aspect)));
+
+            if (canvas.width !== camera.viewW || canvas.height !== camera.viewH) {
+                canvas.width = camera.viewW;
+                canvas.height = camera.viewH;
+            }
+
+            if (camera.viewW < WORLD_W) {
+                camera.x = Math.max(0, Math.min(WORLD_W - camera.viewW, player.x - camera.viewW / 2));
+            } else {
+                camera.x = 0;
+            }
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));
+
+        let lastFrameTime = performance.now();
+        function gameLoop(now) {
+            const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+            update(dt);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function () {
+            initOffscreenCaches();
+            resizeCanvas();
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
+ 
